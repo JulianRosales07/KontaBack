@@ -1,0 +1,55 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Environment Variables & Secrets ###
+.env
+*.env
+*.env.local
+.env.*
+!.env.example
+
+### Documentos, Datos y Esquemas Locales ###
+Docs/
+docs/
+data/
+*.sql
+supabase_schema.sql
+supabase_delta_associates_and_closing.sql
+puc_seed_full.sql
+repomix-output.xml
+
