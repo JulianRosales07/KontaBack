@@ -42,25 +42,60 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class FinancialReportService {
 
+    /** Catálogo: código → título. */
     public static final Map<String, String> CATALOG = new LinkedHashMap<>();
+    /** Código → grupo del menú. */
+    public static final Map<String, String> GROUPS = new LinkedHashMap<>();
+    /** Código → hoja equivalente del informe mensual en Excel (si aplica). */
+    public static final Map<String, String> EXCEL_SHEETS = new LinkedHashMap<>();
 
     static {
-        CATALOG.put("CAJA", "Reporte de caja");
-        CATALOG.put("MOVIMIENTOS_CAJA", "Movimientos de caja por cuenta");
-        CATALOG.put("INGRESOS", "Ingresos por cuenta PUC");
-        CATALOG.put("EGRESOS", "Egresos (gastos) por cuenta PUC");
-        CATALOG.put("RECAUDOS", "Recaudos (cuotas y abonos a préstamos)");
-        CATALOG.put("INTERESES", "Intereses recaudados");
-        CATALOG.put("CARTERA", "Cartera por edades de mora");
-        CATALOG.put("PRESTAMOS", "Préstamos desembolsados");
-        CATALOG.put("CUENTAS_POR_COBRAR", "Cuentas por cobrar (préstamos activos)");
-        CATALOG.put("APORTES", "Aportes de asociados");
-        CATALOG.put("AHORROS", "Ahorros de asociados");
-        CATALOG.put("CUENTAS_POR_PAGAR", "Cuentas por pagar (aportes y ahorros)");
+        add("ESTADO_SITUACION", "Estado de situación financiera", "Estados financieros", "ESFA");
+        add("ESTADO_RESULTADOS", "Estado de resultados", "Estados financieros", "ESTADO RESULTADOS");
+        add("BALANCE_PRUEBA", "Balance de prueba", "Estados financieros", "BAL,PRUEBA");
+        add("PLANILLA_RECAUDOS", "Planilla de recaudos por concepto", "Recaudos y asociados", "PLANILLA");
+        add("RECAUDOS", "Recaudos (cuotas y abonos a préstamos)", "Recaudos y asociados", null);
+        add("ESTADO_CUENTA_ASOCIADO", "Estado de cuenta del asociado", "Recaudos y asociados", null);
+        add("APORTES_SOCIALES", "Aportes sociales por asociado", "Recaudos y asociados", "APORTES");
+        add("APORTES_EXTRAS", "Aportes extraordinarios por asociado", "Recaudos y asociados", "APORTES EXTRAS");
+        add("APORTES", "Aportes recibidos en recibos", "Recaudos y asociados", null);
+        add("AHORROS", "Ahorros de asociados", "Recaudos y asociados", null);
+        add("CUENTAS_POR_PAGAR", "Cuentas por pagar (aportes y ahorros)", "Recaudos y asociados", null);
+        add("CXC_ASOCIADOS", "Cuentas por cobrar a asociados", "Cartera", "CUENTAS POR C");
+        add("CUENTAS_POR_COBRAR", "Cuentas por cobrar (préstamos activos)", "Cartera", null);
+        add("CARTERA", "Cartera por edades de mora", "Cartera", null);
+        add("PRESTAMOS", "Préstamos desembolsados", "Cartera", null);
+        add("INTERESES", "Intereses recaudados", "Cartera", null);
+        add("FONDO_SOLIDARIDAD", "Fondo de solidaridad", "Fondos y actividades", "BAL,PRUEBA (Fondo de solidaridad)");
+        add("TURISMO_RECREACION", "Fondo de turismo y recreación", "Fondos y actividades", "TURISMO Y R");
+        add("PREEXEQUIALES", "Preexequiales", "Fondos y actividades", "BAL,PRUEBA (Pre-exequiales)");
+        add("FONDOS", "Fondos y actividades", "Fondos y actividades", null);
+        add("CAJA", "Reporte de caja", "Tesorería", "BAL,PRUEBA (Caja)");
+        add("MOVIMIENTOS_CAJA", "Movimientos del disponible por cuenta", "Tesorería", null);
+        add("BANCOS", "Bancos", "Tesorería", "BAL,PRUEBA (Bancos)");
+        add("INVERSIONES", "Inversiones (CDT)", "Tesorería", "BAL,PRUEBA (Inversiones)");
+        add("PROPIEDAD_PLANTA", "Propiedad, planta y equipo", "Activos", "ESFA (Activos no corrientes)");
+        add("INGRESOS", "Ingresos por cuenta PUC", "Ingresos y gastos", null);
+        add("EGRESOS", "Egresos (gastos) por cuenta PUC", "Ingresos y gastos", null);
     }
 
+    private static void add(String code, String title, String group, String sheet) {
+        CATALOG.put(code, title);
+        GROUPS.put(code, group);
+        if (sheet != null) EXCEL_SHEETS.put(code, sheet);
+    }
+
+    /**
+     * Filtros comunes. {@code level}: nivel PUC máximo a mostrar (1 clase … 5 auxiliar);
+     * {@code byParty}: detalle por tercero en el balance de prueba.
+     */
     public record Filters(LocalDate from, LocalDate to, String accountCode, VoucherType voucherType,
-                          UUID thirdPartyId, String paymentMethod) {
+                          UUID thirdPartyId, String paymentMethod, Integer level, boolean byParty) {
+
+        public Filters(LocalDate from, LocalDate to, String accountCode, VoucherType voucherType,
+                       UUID thirdPartyId, String paymentMethod) {
+            this(from, to, accountCode, voucherType, thirdPartyId, paymentMethod, null, false);
+        }
     }
 
     private final ReportEntryRepository entryRepository;
@@ -70,6 +105,7 @@ public class FinancialReportService {
     private final AssociateDirectoryService directoryService;
     private final UserRepository userRepository;
     private final com.app.accounting.party.repository.ThirdPartyRepository thirdPartyRepository;
+    private final AccountingStatementsBuilder statements;
 
     @Value("${app.organization.name:Asociación}")
     private String organizationName;
@@ -88,7 +124,8 @@ public class FinancialReportService {
         if (from.isAfter(to)) {
             throw new BusinessRuleException("La fecha inicial no puede ser posterior a la fecha final");
         }
-        Filters filters = new Filters(from, to, blankToNull(f.accountCode()), f.voucherType(), f.thirdPartyId(), blankToNull(f.paymentMethod()));
+        Filters filters = new Filters(from, to, blankToNull(f.accountCode()), f.voucherType(), f.thirdPartyId(), blankToNull(f.paymentMethod()),
+                f.level(), f.byParty());
 
         FinancialReportResponse report = FinancialReportResponse.builder()
                 .code(key)
@@ -115,6 +152,18 @@ public class FinancialReportService {
             case "APORTES" -> associateConcept(report, filters, QuotaCategory.EQUITY_SAVING, "Aportes");
             case "AHORROS" -> associateConcept(report, filters, QuotaCategory.SAVINGS, "Ahorros");
             case "CUENTAS_POR_PAGAR" -> payables(report, filters);
+            case "BALANCE_PRUEBA" -> statements.trialBalance(report, filters);
+            case "ESTADO_SITUACION" -> statements.financialPosition(report, filters);
+            case "ESTADO_RESULTADOS" -> statements.incomeStatement(report, filters);
+            case "PLANILLA_RECAUDOS" -> statements.collectionSheet(report, filters);
+            case "ESTADO_CUENTA_ASOCIADO" -> statements.associateStatement(report, filters);
+            case "CXC_ASOCIADOS", "APORTES_SOCIALES", "APORTES_EXTRAS", "TURISMO_RECREACION", "FONDO_SOLIDARIDAD", "PREEXEQUIALES" ->
+                    statements.partyLedger(report, filters, AccountingStatementsBuilder.PARTY_LEDGERS.get(key));
+            case "FONDOS" -> statements.funds(report, filters);
+            case "BANCOS" -> cash(report, new Filters(from, to, filters.accountCode(), filters.voucherType(), filters.thirdPartyId(), "BANK",
+                    filters.level(), filters.byParty()), true);
+            case "INVERSIONES" -> statements.investments(report, filters);
+            case "PROPIEDAD_PLANTA" -> statements.fixedAssets(report, filters);
             default -> throw new IllegalStateException();
         }
         return report;
@@ -123,13 +172,20 @@ public class FinancialReportService {
     // ================================================================== CAJA
 
     private void cash(FinancialReportResponse r, Filters f, boolean groupByAccount) {
-        String prefix = f.accountCode() != null ? f.accountCode()
-                : "CASH".equalsIgnoreCase(f.paymentMethod()) ? "1105"
-                : "BANK".equalsIgnoreCase(f.paymentMethod()) ? "1110" : "11";
-        r.setSubtitle("Cuentas del disponible " + prefix + "* · Ingresos = débitos, egresos = créditos");
+        List<String> prefixes = f.accountCode() != null ? List.of(f.accountCode())
+                : "CASH".equalsIgnoreCase(f.paymentMethod()) ? List.of("1105")
+                : "BANK".equalsIgnoreCase(f.paymentMethod()) ? List.of("1110", "1120") : List.of("11");
+        r.setSubtitle("Cuentas del disponible " + String.join(", ", prefixes.stream().map(p -> p + "*").toList())
+                + " · Ingresos = débitos, egresos = créditos");
 
-        BigDecimal opening = nz(entryRepository.sumDebitMinusCreditBefore(prefix, f.from()));
-        List<JournalEntry> all = entryRepository.findPostedByAccountPrefix(prefix, f.from(), f.to());
+        BigDecimal opening = BigDecimal.ZERO;
+        List<JournalEntry> all = new ArrayList<>();
+        for (String prefix : prefixes) {
+            opening = opening.add(nz(entryRepository.sumDebitMinusCreditBefore(prefix, f.from())));
+            all.addAll(entryRepository.findPostedByAccountPrefix(prefix, f.from(), f.to()));
+        }
+        all.sort(Comparator.comparing((JournalEntry e) -> e.getVoucher().getIssueDate())
+                .thenComparing(e -> e.getVoucher().getVoucherNumber()));
         BigDecimal allIn = sum(all, JournalEntry::getDebit);
         BigDecimal allOut = sum(all, JournalEntry::getCredit);
         List<JournalEntry> entries = all.stream().filter(e -> matchesEntryFilters(e, f)).toList();
@@ -193,6 +249,7 @@ public class FinancialReportService {
         c.put("income", e.getDebit());
         c.put("expense", e.getCredit());
         c.put("balance", running);
+        c.put("_voucherId", e.getVoucher().getId());
         return Row.builder().cells(c).build();
     }
 
@@ -233,6 +290,7 @@ public class FinancialReportService {
                 c.put("debit", e.getDebit());
                 c.put("credit", e.getCredit());
                 c.put("value", value);
+                c.put("_voucherId", e.getVoucher().getId());
                 r.getRows().add(Row.builder().cells(c).build());
             }
             r.getRows().add(row("SUBTOTAL", Map.of("concept", "Subtotal " + label,
@@ -582,13 +640,16 @@ public class FinancialReportService {
         if (cashAccountCode == null) {
             return false;
         }
-        return "CASH".equalsIgnoreCase(method) ? cashAccountCode.startsWith("1105") : cashAccountCode.startsWith("1110");
+        return "CASH".equalsIgnoreCase(method) ? cashAccountCode.startsWith("1105")
+                : cashAccountCode.startsWith("1110") || cashAccountCode.startsWith("1120");
     }
 
     private void describeFilters(FinancialReportResponse r, Filters f) {
         if (f.accountCode() != null) r.getFilters().put("Cuenta", f.accountCode());
         if (f.voucherType() != null) r.getFilters().put("Tipo de movimiento", voucherTypeLabel(f.voucherType()));
         if (f.paymentMethod() != null) r.getFilters().put("Medio de pago", "CASH".equalsIgnoreCase(f.paymentMethod()) ? "Efectivo (caja)" : "Bancos");
+        if (f.level() != null) r.getFilters().put("Nivel PUC", String.valueOf(f.level()));
+        if (f.byParty()) r.getFilters().put("Detalle", "Por tercero");
         if (f.thirdPartyId() != null) {
             r.getFilters().put("Asociado", thirdPartyRepository.findById(f.thirdPartyId())
                     .map(p -> p.getFullName() + " (" + p.getIdentificationNumber() + ")")

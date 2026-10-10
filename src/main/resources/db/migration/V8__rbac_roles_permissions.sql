@@ -45,7 +45,7 @@ ALTER TABLE users ALTER COLUMN role DROP NOT NULL;
 INSERT INTO roles (id, code, name, description, is_system, created_by) VALUES
     (CAST('b0000000-0000-0000-0000-000000000001' AS UUID), 'SUPER_ADMIN', 'Super Administrador', 'Acceso total, incluida la gestión de usuarios, roles y permisos', TRUE, 'SYSTEM'),
     (CAST('b0000000-0000-0000-0000-000000000002' AS UUID), 'ADMINISTRADOR', 'Administrador', 'Acceso a todos los módulos funcionales excepto gestión de accesos', TRUE, 'SYSTEM')
-ON CONFLICT (code) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- Permisos granulares
 INSERT INTO permissions (id, code, name, module) VALUES
@@ -78,7 +78,7 @@ INSERT INTO permissions (id, code, name, module) VALUES
     (CAST('b1000000-0000-0000-0000-000000000028' AS UUID), 'REPORTS_EXPORT', 'Exportar reportes (PDF / Excel)', 'REPORTS'),
     (CAST('b1000000-0000-0000-0000-000000000029' AS UUID), 'SETTINGS_VIEW', 'Ver configuración', 'SETTINGS'),
     (CAST('b1000000-0000-0000-0000-000000000030' AS UUID), 'SETTINGS_MANAGE', 'Modificar configuración', 'SETTINGS')
-ON CONFLICT (code) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- SUPER_ADMIN: todos los permisos
 INSERT INTO role_permissions (role_id, permission_id)

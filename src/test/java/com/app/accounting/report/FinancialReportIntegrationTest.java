@@ -155,7 +155,9 @@ class FinancialReportIntegrationTest {
     void exportsAllReports() {
         FinancialReportService.Filters f = new FinancialReportService.Filters(today.minusMonths(1), today, null, null, null, null);
         for (String code : FinancialReportService.CATALOG.keySet()) {
-            FinancialReportResponse r = reportService.generate(code, f);
+            // el estado de cuenta es por asociado: exige elegir uno
+            FinancialReportResponse r = reportService.generate(code, "ESTADO_CUENTA_ASOCIADO".equals(code)
+                    ? new FinancialReportService.Filters(f.from(), f.to(), null, null, juan.getId(), null) : f);
             byte[] pdf = exportService.toPdf(r);
             byte[] xlsx = exportService.toExcel(r);
             assertThat(new String(pdf, 0, 4, StandardCharsets.US_ASCII)).as(code).isEqualTo("%PDF");

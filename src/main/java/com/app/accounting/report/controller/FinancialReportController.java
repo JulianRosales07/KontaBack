@@ -1,6 +1,7 @@
 package com.app.accounting.report.controller;
 
 import com.app.accounting.report.dto.response.FinancialReportResponse;
+import com.app.accounting.report.service.AccountingStatementsBuilder;
 import com.app.accounting.report.service.FinancialReportService;
 import com.app.accounting.report.service.ReportExportService;
 import com.app.accounting.voucher.entity.VoucherType;
@@ -28,14 +29,27 @@ public class FinancialReportController {
 
     private final FinancialReportService reportService;
     private final ReportExportService exportService;
+    private final AccountingStatementsBuilder statements;
 
     @GetMapping
     @PreAuthorize("hasAuthority('REPORTS_VIEW')")
     @Operation(summary = "Catálogo de reportes disponibles")
     public ResponseEntity<List<Map<String, String>>> catalog() {
         return ResponseEntity.ok(FinancialReportService.CATALOG.entrySet().stream()
-                .map(e -> Map.of("code", e.getKey(), "title", e.getValue()))
+                .map(e -> Map.of("code", e.getKey(), "title", e.getValue(),
+                        "group", FinancialReportService.GROUPS.getOrDefault(e.getKey(), "Otros"),
+                        "excelSheet", FinancialReportService.EXCEL_SHEETS.getOrDefault(e.getKey(), "")))
                 .toList());
+    }
+
+    @GetMapping("/dashboard")
+    @PreAuthorize("hasAuthority('REPORTS_VIEW')")
+    @Operation(summary = "Indicadores y series del tablero financiero (desde los asientos asentados)")
+    public ResponseEntity<Map<String, Object>> dashboard(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        return ResponseEntity.ok(statements.dashboard(from, to != null ? to : LocalDate.now()));
     }
 
     @GetMapping("/{code}")
@@ -48,10 +62,12 @@ public class FinancialReportController {
             @RequestParam(required = false) String accountCode,
             @RequestParam(required = false) VoucherType voucherType,
             @RequestParam(required = false) UUID thirdPartyId,
-            @RequestParam(required = false) String paymentMethod
+            @RequestParam(required = false) String paymentMethod,
+            @RequestParam(required = false) Integer level,
+            @RequestParam(defaultValue = "false") boolean byParty
     ) {
         return ResponseEntity.ok(reportService.generate(code,
-                new FinancialReportService.Filters(from, to, accountCode, voucherType, thirdPartyId, paymentMethod)));
+                new FinancialReportService.Filters(from, to, accountCode, voucherType, thirdPartyId, paymentMethod, level, byParty)));
     }
 
     @GetMapping("/{code}/export")
@@ -65,10 +81,12 @@ public class FinancialReportController {
             @RequestParam(required = false) String accountCode,
             @RequestParam(required = false) VoucherType voucherType,
             @RequestParam(required = false) UUID thirdPartyId,
-            @RequestParam(required = false) String paymentMethod
+            @RequestParam(required = false) String paymentMethod,
+            @RequestParam(required = false) Integer level,
+            @RequestParam(defaultValue = "false") boolean byParty
     ) {
         FinancialReportResponse report = reportService.generate(code,
-                new FinancialReportService.Filters(from, to, accountCode, voucherType, thirdPartyId, paymentMethod));
+                new FinancialReportService.Filters(from, to, accountCode, voucherType, thirdPartyId, paymentMethod, level, byParty));
         String base = "reporte-" + report.getCode().toLowerCase().replace('_', '-') + "-" + report.getPeriodFrom() + "_" + report.getPeriodTo();
         HttpHeaders headers = new HttpHeaders();
         byte[] body;
