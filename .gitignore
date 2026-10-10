@@ -48,6 +48,7 @@ Docs/
 docs/
 data/
 *.sql
+!src/main/resources/db/migration/*.sql
 supabase_schema.sql
 supabase_delta_associates_and_closing.sql
 puc_seed_full.sql
