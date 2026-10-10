@@ -403,7 +403,7 @@ public class PdfExportService {
             infoTable.setWidthPercentage(100);
             infoTable.setSpacingAfter(15f);
 
-            addInfoCell(infoTable, "AGENTE RETENEDOR:", "DATAICO S.A.S.");
+            addInfoCell(infoTable, "AGENTE RETENEDOR:", "KONTA S.A.S.");
             addInfoCell(infoTable, "NIT RETENEDOR:", "901.234.567-8");
             addInfoCell(infoTable, "BENEFICIARIO DEL PAGO:", partyName);
             addInfoCell(infoTable, "NIT / CÉDULA BENEFICIARIO:", partyIdentification);
@@ -470,15 +470,42 @@ public class PdfExportService {
     private void addCompanyHeader(Document document, String documentTitle, String docNumber, LocalDate date) throws DocumentException {
         PdfPTable headerTable = new PdfPTable(2);
         headerTable.setWidthPercentage(100);
-        headerTable.setWidths(new float[]{6f, 4f});
+        headerTable.setWidths(new float[]{6.2f, 3.8f});
 
-        // Columna Izquierda: Datos Empresa
+        // Columna Izquierda: Logo y Datos Empresa
         PdfPCell leftCell = new PdfPCell();
         leftCell.setBorder(Rectangle.NO_BORDER);
-        leftCell.addElement(new Paragraph("DATAICO S.A.S. / KONTA ERP", FONT_TITLE));
-        leftCell.addElement(new Paragraph("NIT: 901.234.567-8 | Régimen Común", FONT_SUBTITLE));
-        leftCell.addElement(new Paragraph("Cra 7 # 71-21 Torre B Of 801, Bogotá D.C.", FONT_SUBTITLE));
-        leftCell.addElement(new Paragraph("Tel: (601) 745-0000 | info@dataico.com", FONT_SUBTITLE));
+
+        Image logoImg = getLogoImage();
+        if (logoImg != null) {
+            PdfPTable brandTable = new PdfPTable(2);
+            brandTable.setWidthPercentage(100);
+            brandTable.setWidths(new float[]{2.0f, 8.0f});
+
+            PdfPCell logoCell = new PdfPCell();
+            logoCell.setBorder(Rectangle.NO_BORDER);
+            logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            logoCell.setPaddingRight(6f);
+            logoImg.scaleToFit(52f, 52f);
+            logoCell.addElement(logoImg);
+            brandTable.addCell(logoCell);
+
+            PdfPCell textCell = new PdfPCell();
+            textCell.setBorder(Rectangle.NO_BORDER);
+            textCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            textCell.addElement(new Paragraph("KONTA S.A.S.", FONT_TITLE));
+            textCell.addElement(new Paragraph("NIT: 901.234.567-8 | Régimen Común", FONT_SUBTITLE));
+            textCell.addElement(new Paragraph("Cra 7 # 71-21 Torre B Of 801, Bogotá D.C.", FONT_SUBTITLE));
+            textCell.addElement(new Paragraph("Tel: (601) 745-0000 | info@konta.com", FONT_SUBTITLE));
+            brandTable.addCell(textCell);
+
+            leftCell.addElement(brandTable);
+        } else {
+            leftCell.addElement(new Paragraph("KONTA S.A.S.", FONT_TITLE));
+            leftCell.addElement(new Paragraph("NIT: 901.234.567-8 | Régimen Común", FONT_SUBTITLE));
+            leftCell.addElement(new Paragraph("Cra 7 # 71-21 Torre B Of 801, Bogotá D.C.", FONT_SUBTITLE));
+            leftCell.addElement(new Paragraph("Tel: (601) 745-0000 | info@konta.com", FONT_SUBTITLE));
+        }
         headerTable.addCell(leftCell);
 
         // Columna Derecha: Número y Fecha
@@ -591,5 +618,42 @@ public class PdfExportService {
         if ("SOCIAL_FUND".equals(cat)) return "Fondo Social";
         if ("INCOME".equals(cat)) return "Cuota Sostenimiento / Ingreso";
         return cat;
+    }
+
+    private Image getLogoImage() {
+        try {
+            byte[] bytes = null;
+            try (java.io.InputStream is = getClass().getResourceAsStream("/konta-logo.jpg")) {
+                if (is != null) {
+                    bytes = is.readAllBytes();
+                }
+            }
+            if (bytes == null) {
+                try (java.io.InputStream is = getClass().getResourceAsStream("/static/konta-logo.jpg")) {
+                    if (is != null) {
+                        bytes = is.readAllBytes();
+                    }
+                }
+            }
+            if (bytes == null) {
+                java.nio.file.Path[] candidates = new java.nio.file.Path[]{
+                        java.nio.file.Path.of("src/main/resources/konta-logo.jpg"),
+                        java.nio.file.Path.of("accounting-service/src/main/resources/konta-logo.jpg"),
+                        java.nio.file.Path.of("../accounting-service-web/public/konta-logo.jpg"),
+                        java.nio.file.Path.of("accounting-service-web/public/konta-logo.jpg")
+                };
+                for (var p : candidates) {
+                    if (java.nio.file.Files.exists(p)) {
+                        bytes = java.nio.file.Files.readAllBytes(p);
+                        break;
+                    }
+                }
+            }
+            if (bytes != null && bytes.length > 0) {
+                return Image.getInstance(bytes);
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 }

@@ -41,7 +41,7 @@ public class ExcelExportService {
             // Título
             Row titleRow = sheet.createRow(rowIdx++);
             Cell titleCell = titleRow.createCell(0);
-            titleCell.setCellValue("DATAICO S.A.S. - ESTADO DE CUENTA DE CARTERA");
+            titleCell.setCellValue("KONTA S.A.S. - ESTADO DE CUENTA DE CARTERA");
             titleCell.setCellStyle(titleStyle);
 
             Row subRow = sheet.createRow(rowIdx++);
