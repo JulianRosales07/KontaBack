@@ -29,6 +29,7 @@ spring:
     enabled: ${FLYWAY_ENABLED:true}
     baseline-on-migrate: true
     baseline-version: 5
+    validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:false}
     locations: classpath:db/migration
 
 springdoc:
