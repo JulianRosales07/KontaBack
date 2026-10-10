@@ -109,6 +109,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public UserResponse approveUser(UUID id, List<String> roleCodes) {
+        if (roleCodes == null || roleCodes.isEmpty()) {
+            throw new BusinessRuleException("Debe seleccionar al menos un rol para aprobar al usuario");
+        }
+        User user = findUser(id);
+        applyRoles(user, roleCodes);
+        user.setEnabled(true);
+        return SecurityMapper.toUserResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
     public void changePassword(UUID id, ChangePasswordRequest request) {
         User user = findUser(id);
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));

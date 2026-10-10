@@ -160,4 +160,20 @@ class UserServiceTest {
         assertThat(sampleUser.isEnabled()).isTrue();
         assertThat(sampleUser.getRoleCodes()).containsExactly(Role.SUPER_ADMIN);
     }
+
+    @Test
+    @DisplayName("Debe aprobar a un usuario asignándole roles y activando su cuenta")
+    void shouldApproveUser() {
+        sampleUser.getRoles().clear();
+        sampleUser.setEnabled(false);
+        UUID userId = sampleUser.getId();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(sampleUser));
+        when(roleRepository.findByCodeIn(anyCollection())).thenReturn(List.of(administrador));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UserResponse response = userService.approveUser(userId, List.of(Role.ADMINISTRADOR));
+
+        assertThat(response.isEnabled()).isTrue();
+        assertThat(response.getRoles()).containsExactly(Role.ADMINISTRADOR);
+    }
 }

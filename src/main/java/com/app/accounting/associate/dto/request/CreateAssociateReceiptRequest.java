@@ -42,4 +42,26 @@ public class CreateAssociateReceiptRequest {
     private List<ReceiptItemRequest> items;
 
     private String notes;
+
+    /**
+     * Abono a préstamo incluido en el mismo recaudo (cuota mensual + cuota del préstamo).
+     * Se registra en la misma transacción: si falla una parte, no se guarda ninguna.
+     */
+    @Valid
+    private LoanPortion loanPayment;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LoanPortion {
+        @NotNull(message = "El préstamo es obligatorio")
+        private UUID loanId;
+
+        private com.app.accounting.loan.entity.PaymentMethod paymentMethod;
+
+        @NotEmpty(message = "Debe indicar las cuotas del préstamo a abonar")
+        @Valid
+        private List<com.app.accounting.loan.dto.request.LoanPaymentRequest.Allocation> allocations;
+    }
 }

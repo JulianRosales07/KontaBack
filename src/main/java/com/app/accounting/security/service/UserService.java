@@ -22,5 +22,7 @@ public interface UserService {
 
     UserResponse assignRoles(UUID id, List<String> roleCodes);
 
+    UserResponse approveUser(UUID id, List<String> roleCodes);
+
     void changePassword(UUID id, ChangePasswordRequest request);
 }

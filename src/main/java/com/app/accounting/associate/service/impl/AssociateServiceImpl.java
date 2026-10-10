@@ -55,6 +55,7 @@ public class AssociateServiceImpl implements AssociateService {
     private final JournalVoucherRepository journalVoucherRepository;
     private final com.app.accounting.common.document.PdfExportService pdfExportService;
     private final com.app.accounting.common.document.ExcelExportService excelExportService;
+    private final com.app.accounting.loan.service.LoanService loanService;
 
     @Override
     @Transactional(readOnly = true)
@@ -176,7 +177,31 @@ public class AssociateServiceImpl implements AssociateService {
         AssociateReceipt saved = associateReceiptRepository.save(receipt);
         log.info("Recaudo de asociado registrado exitosamente: {} por valor de ${}", receiptNumber, request.getTotalAmount());
 
-        return mapReceiptToResponse(saved);
+        AssociateReceiptResponse response = mapReceiptToResponse(saved);
+
+        // Cuota del préstamo incluida en el mismo recaudo: misma transacción, mismo asociado y misma caja
+        CreateAssociateReceiptRequest.LoanPortion loanPortion = request.getLoanPayment();
+        if (loanPortion != null) {
+            com.app.accounting.loan.dto.response.LoanResponse loan = loanService.getLoan(loanPortion.getLoanId());
+            if (!loan.getThirdPartyId().equals(associate.getId())) {
+                throw new BusinessRuleException("El préstamo " + loan.getLoanNumber() + " no pertenece a " + associate.getFullName());
+            }
+            com.app.accounting.loan.entity.PaymentMethod method = loanPortion.getPaymentMethod() != null
+                    ? loanPortion.getPaymentMethod()
+                    : (cashAccount.getCode().startsWith("1105")
+                        ? com.app.accounting.loan.entity.PaymentMethod.CASH
+                        : com.app.accounting.loan.entity.PaymentMethod.TRANSFER);
+            response.setLoanPayment(loanService.registerPayment(loanPortion.getLoanId(),
+                    com.app.accounting.loan.dto.request.LoanPaymentRequest.builder()
+                            .paymentDate(request.getPaymentDate())
+                            .paymentMethod(method)
+                            .cashAccountCode(cashAccount.getCode())
+                            .reference(receiptNumber)
+                            .notes("Incluido en el recaudo " + receiptNumber)
+                            .allocations(loanPortion.getAllocations())
+                            .build()));
+        }
+        return response;
     }
 
     @Override

@@ -34,6 +34,8 @@ public class AssociateReceiptResponse {
     private String notes;
     private Instant createdAt;
     private List<AssociateReceiptItemResponse> items;
+    /** Abono a préstamo registrado junto con este recaudo (si se incluyó). */
+    private com.app.accounting.loan.dto.response.LoanPaymentResponse loanPayment;
 
     @Data
     @Builder

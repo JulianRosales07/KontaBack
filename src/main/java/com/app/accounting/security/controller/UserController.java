@@ -67,6 +67,16 @@ public class UserController {
         return ResponseEntity.ok(userService.assignRoles(id, request.getRoles()));
     }
 
+    @PostMapping("/{id}/approve")
+    @PreAuthorize("hasAuthority('USERS_UPDATE')")
+    @Operation(summary = "Aprobar usuario asignándole roles y activando su cuenta")
+    public ResponseEntity<UserResponse> approveUser(
+            @PathVariable UUID id,
+            @Valid @RequestBody AssignRolesRequest request
+    ) {
+        return ResponseEntity.ok(userService.approveUser(id, request.getRoles()));
+    }
+
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAuthority('USERS_DISABLE')")
     @Operation(summary = "Activar o desactivar un usuario")
