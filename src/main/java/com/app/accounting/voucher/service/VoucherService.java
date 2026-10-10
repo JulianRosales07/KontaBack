@@ -17,5 +17,8 @@ public interface VoucherService {
     JournalVoucherResponse getVoucherById(UUID id);
     JournalVoucherResponse getVoucherByNumber(String voucherNumber);
     Page<JournalVoucherResponse> getAllVouchers(LocalDate startDate, LocalDate endDate, VoucherStatus status, Pageable pageable);
+
+    Page<JournalVoucherResponse> getAllVouchers(LocalDate startDate, LocalDate endDate, VoucherStatus status,
+                                                com.app.accounting.voucher.entity.VoucherType type, String query, Pageable pageable);
     void deleteDraftVoucher(UUID voucherId);
 }

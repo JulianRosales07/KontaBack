@@ -1,11 +1,11 @@
 package com.app.accounting.security.dto.response;
 
-import com.app.accounting.security.entity.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -18,7 +18,12 @@ public class UserResponse {
     private String email;
     private String fullName;
     private String phone;
-    private Role role;
+    private String avatarUrl;
+    /** Rol principal (presentación). Puede ser null si el usuario aún no tiene rol asignado. */
+    private String role;
+    private List<String> roles;
+    private List<String> permissions;
     private boolean enabled;
     private java.time.OffsetDateTime lastLogin;
+    private java.time.Instant createdAt;
 }

@@ -20,6 +20,7 @@ import java.util.List;
 @RequestMapping("/api/v1/closing")
 @RequiredArgsConstructor
 @Tag(name = "Cierre Contable y Periodos", description = "Gestión de periodos contables mensuales y motor de cierre anual de cuentas de resultado")
+@PreAuthorize("hasAuthority('ACCOUNTING_VIEW')")
 public class AccountingClosingController {
 
     private final AccountingPeriodService periodService;
@@ -31,22 +32,22 @@ public class AccountingClosingController {
         return ResponseEntity.ok(periodService.getPeriodsByYear(year));
     }
 
+    @PreAuthorize("hasAuthority('ACCOUNTING_CLOSE')")
     @PostMapping("/periods/open")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Abrir o desbloquear un periodo contable mensual")
     public ResponseEntity<AccountingPeriodResponse> openPeriod(@Valid @RequestBody OpenPeriodRequest request) {
         return ResponseEntity.ok(periodService.openPeriod(request.getYear(), request.getMonth()));
     }
 
+    @PreAuthorize("hasAuthority('ACCOUNTING_CLOSE')")
     @PostMapping("/periods/close")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Cerrar o bloquear un periodo contable mensual")
     public ResponseEntity<AccountingPeriodResponse> closePeriod(@Valid @RequestBody ClosePeriodRequest request) {
         return ResponseEntity.ok(periodService.closePeriod(request.getYear(), request.getMonth(), request.getClosedBy()));
     }
 
+    @PreAuthorize("hasAuthority('ACCOUNTING_CLOSE')")
     @PostMapping("/annual/{year}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Ejecutar el cierre anual de cuentas de resultado (Clases 4, 5, 6, 7 contra 5905 y traslado a patrimonio)")
     public ResponseEntity<AnnualClosingResponse> executeAnnualClosing(@PathVariable int year) {
         return ResponseEntity.ok(annualClosingService.executeYearEndClosing(year));

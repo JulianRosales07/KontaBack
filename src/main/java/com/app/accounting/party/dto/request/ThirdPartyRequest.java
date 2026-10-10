@@ -35,4 +35,11 @@ public class ThirdPartyRequest {
 
     @NotNull(message = "El tipo de persona (NATURAL o JURIDICA) es obligatorio")
     private PersonType type;
+
+    private String idType;
+    private String address;
+    private String classification;
+    private Boolean associate;
+    private String associateCode;
+    private String status;
 }

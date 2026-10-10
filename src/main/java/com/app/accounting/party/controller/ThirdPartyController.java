@@ -21,19 +21,20 @@ import java.util.UUID;
 @RequestMapping("/api/v1/parties")
 @RequiredArgsConstructor
 @Tag(name = "Terceros", description = "Gestión de asociados, clientes y proveedores")
+@PreAuthorize("hasAuthority('ASSOCIATES_VIEW')")
 public class ThirdPartyController {
 
     private final ThirdPartyService thirdPartyService;
 
+    @PreAuthorize("hasAuthority('ASSOCIATES_CREATE')")
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR', 'AUXILIAR')")
     @Operation(summary = "Crear un nuevo tercero")
     public ResponseEntity<ThirdPartyResponse> createThirdParty(@Valid @RequestBody ThirdPartyRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(thirdPartyService.createThirdParty(request));
     }
 
+    @PreAuthorize("hasAuthority('ASSOCIATES_UPDATE')")
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Actualizar información de un tercero")
     public ResponseEntity<ThirdPartyResponse> updateThirdParty(@PathVariable UUID id, @Valid @RequestBody ThirdPartyRequest request) {
         return ResponseEntity.ok(thirdPartyService.updateThirdParty(id, request));

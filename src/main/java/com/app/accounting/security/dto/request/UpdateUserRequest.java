@@ -1,13 +1,13 @@
 package com.app.accounting.security.dto.request;
 
-import com.app.accounting.security.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @Builder
@@ -23,8 +23,8 @@ public class UpdateUserRequest {
 
     private String phone;
 
-    @NotNull(message = "El rol es obligatorio")
-    private Role role;
+    /** null = no modificar roles. Lista (posiblemente vacía) = reemplazar roles. */
+    private List<String> roles;
 
     private Boolean enabled;
 }

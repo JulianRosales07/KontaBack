@@ -79,35 +79,45 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) ->
+                                writeProblem(response, 401, "Autenticación requerida"))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                writeProblem(response, 403, "No tiene permisos para acceder a este recurso")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 "/",
-                                "/api/v1/auth/**",
+                                "/error",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/google",
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/forgot-password",
+                                "/api/v1/auth/reset-password",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/h2-console/**"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/v1/accounts/**",
-                                "/api/v1/puc/**",
-                                "/api/v1/taxes/templates/**",
-                                "/api/v1/parties/**",
-                                "/api/v1/vouchers/**",
-                                "/api/v1/reports/**",
-                                "/api/v1/closing/**",
-                                "/api/v1/billing/**",
-                                "/api/v1/treasury/**"
-                        ).permitAll()
-                        .requestMatchers(
-                                "/api/v1/associates/**",
-                                "/api/v1/ai/**",
-                                "/api/v1/parties/**"
-                        ).permitAll()
+                        // Gestión de accesos: primera barrera por URL (antes de leer el cuerpo de la petición);
+                        // el detalle por operación lo valida @PreAuthorize en cada endpoint.
+                        .requestMatchers("/api/v1/users/**").hasAnyAuthority(
+                                "USERS_VIEW", "USERS_CREATE", "USERS_UPDATE", "USERS_DISABLE", "USERS_RESET_PASSWORD")
+                        .requestMatchers("/api/v1/roles/**").hasAnyAuthority("ROLES_VIEW", "ROLES_MANAGE")
+                        .requestMatchers("/api/v1/permissions/**").hasAuthority("PERMISSIONS_VIEW")
+                        // Todo lo demás exige usuario autenticado; la autorización fina se valida con
+                        // @PreAuthorize(hasAuthority('<PERMISO>')) en cada controlador.
                         .anyRequest().authenticated()
                 );
 
         return http.build();
+    }
+
+    private static void writeProblem(jakarta.servlet.http.HttpServletResponse response, int status, String detail)
+            throws java.io.IOException {
+        response.setStatus(status);
+        response.setContentType("application/problem+json;charset=UTF-8");
+        response.getWriter().write("{\"status\":" + status + ",\"title\":\""
+                + (status == 401 ? "Unauthorized" : "Forbidden") + "\",\"detail\":\"" + detail + "\"}");
     }
 }

@@ -1,5 +1,6 @@
 package com.app.accounting.associate.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.app.accounting.associate.dto.request.CreateAssociateReceiptRequest;
 import com.app.accounting.associate.dto.response.AssociateReceiptResponse;
 import com.app.accounting.associate.dto.response.AssociateStatementResponse;
@@ -23,6 +24,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/associates")
 @RequiredArgsConstructor
 @Tag(name = "Asociados y Cuotas", description = "Gestión de plantillas de cuotas, recaudos discriminados y estados de cuenta para Asociaciones")
+@PreAuthorize("hasAnyAuthority('COLLECTIONS_VIEW', 'ASSOCIATES_VIEW')")
 public class AssociateController {
 
     private final AssociateService associateService;
@@ -39,6 +41,7 @@ public class AssociateController {
         return ResponseEntity.ok(associateService.getTemplateById(id));
     }
 
+    @PreAuthorize("hasAuthority('COLLECTIONS_CREATE')")
     @PostMapping("/receipts")
     @Operation(summary = "Registrar recaudo de cuota con desglose contable automático y generación de comprobante")
     public ResponseEntity<AssociateReceiptResponse> registerReceipt(@Valid @RequestBody CreateAssociateReceiptRequest request) {

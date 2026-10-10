@@ -177,7 +177,20 @@ public class VoucherServiceImpl implements VoucherService {
             VoucherStatus status,
             Pageable pageable
     ) {
-        Specification<JournalVoucher> spec = (root, query, cb) -> {
+        return getAllVouchers(startDate, endDate, status, null, null, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<JournalVoucherResponse> getAllVouchers(
+            LocalDate startDate,
+            LocalDate endDate,
+            VoucherStatus status,
+            VoucherType type,
+            String query,
+            Pageable pageable
+    ) {
+        Specification<JournalVoucher> spec = (root, criteria, cb) -> {
             var predicates = new ArrayList<jakarta.persistence.criteria.Predicate>();
 
             if (startDate != null) {
@@ -188,6 +201,15 @@ public class VoucherServiceImpl implements VoucherService {
             }
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
+            }
+            if (type != null) {
+                predicates.add(cb.equal(root.get("voucherType"), type));
+            }
+            if (query != null && !query.isBlank()) {
+                String like = "%" + query.trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("voucherNumber")), like),
+                        cb.like(cb.lower(root.get("description")), like)));
             }
 
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));

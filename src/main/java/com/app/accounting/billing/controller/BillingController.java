@@ -30,13 +30,14 @@ import java.util.UUID;
 @RequestMapping("/api/v1/billing")
 @RequiredArgsConstructor
 @Tag(name = "Facturación y Cartera (Cuentas por Cobrar)", description = "Emisión de facturas de venta a crédito y control de cartera de clientes")
+@PreAuthorize("hasAuthority('ACCOUNTING_VIEW')")
 public class BillingController {
 
     private final BillingService billingService;
     private final TreasuryService treasuryService;
 
+    @PreAuthorize("hasAuthority('ACCOUNTING_CREATE')")
     @PostMapping("/invoices")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR', 'AUXILIAR')")
     @Operation(summary = "Emitir factura de venta a crédito con liquidación de impuestos y causación contable automática")
     public ResponseEntity<SalesInvoiceResponse> createSalesInvoice(@Valid @RequestBody SalesInvoiceRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(billingService.createSalesInvoice(request));

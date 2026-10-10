@@ -11,11 +11,13 @@ import com.app.accounting.security.dto.request.ResetPasswordRequest;
 import com.app.accounting.security.dto.response.AuthResponse;
 import com.app.accounting.security.dto.response.MessageResponse;
 import com.app.accounting.security.dto.response.UserResponse;
-import com.app.accounting.security.entity.Role;
 import com.app.accounting.security.entity.User;
 import com.app.accounting.security.jwt.JwtService;
 import com.app.accounting.security.repository.UserRepository;
+import com.app.accounting.security.google.GoogleTokenVerifier;
 import com.app.accounting.security.service.AuthService;
+import com.app.accounting.security.service.SecurityMapper;
+import com.app.accounting.security.service.SuperAdminBootstrapService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,6 +38,8 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final GoogleTokenVerifier googleTokenVerifier;
+    private final SuperAdminBootstrapService superAdminBootstrapService;
 
     @Override
     @Transactional
@@ -51,17 +55,7 @@ public class AuthServiceImpl implements AuthService {
         user.setLastLogin(java.time.OffsetDateTime.now());
         userRepository.save(user);
 
-        String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
-
-        return AuthResponse.builder()
-                .token(token)
-                .tokenType("Bearer")
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .role(user.getRole().name())
-                .expiresIn(jwtService.getExpirationMs())
-                .build();
+        return issueToken(user, null);
     }
 
     @Override
@@ -70,32 +64,23 @@ public class AuthServiceImpl implements AuthService {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new DuplicateResourceException("El nombre de usuario ya está registrado");
         }
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.findByEmailIgnoreCase(request.getEmail()).isPresent()) {
             throw new DuplicateResourceException("El correo electrónico ya está registrado");
         }
 
+        // Registro público: la cuenta se crea SIN roles (sin acceso) hasta que un SUPER_ADMIN la apruebe.
         User user = User.builder()
                 .username(request.getUsername())
-                .email(request.getEmail())
+                .email(request.getEmail().trim().toLowerCase())
                 .fullName(request.getFullName())
                 .phone(request.getPhone())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole() != null ? request.getRole() : Role.ROLE_ADMIN)
                 .enabled(true)
                 .build();
 
         User savedUser = userRepository.save(user);
-        String token = jwtService.generateToken(savedUser, Map.of("role", savedUser.getRole().name()));
-
-        return AuthResponse.builder()
-                .token(token)
-                .tokenType("Bearer")
-                .username(savedUser.getUsername())
-                .email(savedUser.getEmail())
-                .fullName(savedUser.getFullName())
-                .role(savedUser.getRole().name())
-                .expiresIn(jwtService.getExpirationMs())
-                .build();
+        superAdminBootstrapService.assignIfEligible(savedUser);
+        return issueToken(savedUser, null);
     }
 
     @Override
@@ -111,16 +96,7 @@ public class AuthServiceImpl implements AuthService {
                 .or(() -> userRepository.findByEmail(username))
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + username));
 
-        return UserResponse.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .phone(user.getPhone())
-                .role(user.getRole())
-                .enabled(user.isEnabled())
-                .lastLogin(user.getLastLogin())
-                .build();
+        return SecurityMapper.toUserResponse(user);
     }
 
     @Override
@@ -173,11 +149,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse loginWithGoogle(GoogleAuthRequest request) {
-        String email = request.getEmail().trim().toLowerCase();
-        User user = userRepository.findByEmail(email).orElse(null);
+        // La identidad se toma del ID token verificado por Google, nunca del cuerpo enviado por el cliente.
+        GoogleTokenVerifier.GoogleIdentity identity = googleTokenVerifier.verify(request.getIdToken());
+        String email = identity.email();
+        String fullName = identity.fullName() != null ? identity.fullName() : request.getFullName();
+        String picture = identity.picture() != null ? identity.picture() : request.getPicture();
+
+        User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
 
         if (user == null) {
-            // Crear automáticamente la cuenta del usuario de Google en la base de datos
+            // Cuenta nueva: se crea SIN roles (sin acceso) hasta aprobación de un SUPER_ADMIN.
             String baseUsername = email.contains("@") ? email.split("@")[0] : email;
             String username = baseUsername;
             int counter = 1;
@@ -190,36 +171,33 @@ public class AuthServiceImpl implements AuthService {
                     .username(username)
                     .email(email)
                     .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
-                    .fullName(request.getFullName() != null && !request.getFullName().isBlank() ? request.getFullName() : username)
-                    .avatarUrl(request.getPicture())
-                    .role(Role.ROLE_ADMIN)
+                    .fullName(fullName != null && !fullName.isBlank() ? fullName : username)
+                    .avatarUrl(picture)
                     .enabled(true)
+                    .lastLogin(java.time.OffsetDateTime.now())
                     .build();
 
             user = userRepository.save(user);
+            superAdminBootstrapService.assignIfEligible(user);
         } else {
-            if (request.getPicture() != null && !request.getPicture().isBlank()) {
-                user.setAvatarUrl(request.getPicture());
+            if (!user.isEnabled()) {
+                throw new org.springframework.security.authentication.DisabledException("La cuenta está desactivada");
             }
-            if (request.getFullName() != null && !request.getFullName().isBlank() && (user.getFullName() == null || user.getFullName().isBlank())) {
-                user.setFullName(request.getFullName());
+            if (picture != null && !picture.isBlank()) {
+                user.setAvatarUrl(picture);
+            }
+            if (fullName != null && !fullName.isBlank() && (user.getFullName() == null || user.getFullName().isBlank())) {
+                user.setFullName(fullName);
             }
             user.setLastLogin(java.time.OffsetDateTime.now());
             user = userRepository.save(user);
         }
 
-        String token = jwtService.generateToken(user, Map.of("role", user.getRole().name()));
+        return issueToken(user, picture);
+    }
 
-        return AuthResponse.builder()
-                .token(token)
-                .tokenType("Bearer")
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .role(user.getRole().name())
-                .picture(user.getAvatarUrl() != null ? user.getAvatarUrl() : request.getPicture())
-                .avatarUrl(user.getAvatarUrl() != null ? user.getAvatarUrl() : request.getPicture())
-                .expiresIn(jwtService.getExpirationMs())
-                .build();
+    private AuthResponse issueToken(User user, String fallbackPicture) {
+        String token = jwtService.generateToken(user, Map.of("roles", user.getRoleCodes()));
+        return SecurityMapper.toAuthResponse(user, token, jwtService.getExpirationMs(), fallbackPicture);
     }
 }

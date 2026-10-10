@@ -25,19 +25,20 @@ import java.util.UUID;
 @RequestMapping("/api/v1/expenses")
 @RequiredArgsConstructor
 @Tag(name = "Compras y Cuentas por Pagar (Gastos)", description = "Registro de compras y facturas de proveedores con retenciones y causación automática")
+@PreAuthorize("hasAuthority('ACCOUNTING_VIEW')")
 public class ExpenseController {
 
     private final ExpenseService expenseService;
 
+    @PreAuthorize("hasAuthority('ACCOUNTING_CREATE')")
     @PostMapping("/invoices")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR', 'AUXILIAR')")
     @Operation(summary = "Registrar factura de proveedor (compra/gasto) con liquidación de impuestos y causación contable automática")
     public ResponseEntity<PurchaseInvoiceResponse> createPurchaseInvoice(@Valid @RequestBody PurchaseInvoiceRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(expenseService.createPurchaseInvoice(request));
     }
 
+    @PreAuthorize("hasAuthority('ACCOUNTING_CREATE')")
     @PostMapping("/equivalent-documents")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR', 'AUXILIAR')")
     @Operation(summary = "Crear Documento Equivalente / Soporte (como comprobante contable de causación o recibo de egreso directo)")
     public ResponseEntity<EquivalentDocumentResponse> createEquivalentDocument(@Valid @RequestBody EquivalentDocumentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(expenseService.createEquivalentDocument(request));

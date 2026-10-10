@@ -1,14 +1,15 @@
 package com.app.accounting.security.dto.request;
 
-import com.app.accounting.security.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Builder
@@ -32,9 +33,10 @@ public class CreateUserRequest {
 
     private String phone;
 
-    @NotNull(message = "El rol es obligatorio")
-    private Role role;
-
+    /** Códigos de rol a asignar (ej. ["ADMINISTRADOR"]). Vacío = usuario sin acceso. */
     @Builder.Default
-    private boolean enabled = true;
+    private List<String> roles = new ArrayList<>();
+
+    /** null = activo. */
+    private Boolean enabled;
 }

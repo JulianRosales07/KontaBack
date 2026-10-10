@@ -21,12 +21,12 @@ import java.time.LocalDate;
 @RequestMapping("/api/v1/importers/excel")
 @RequiredArgsConstructor
 @Tag(name = "Importador Excel", description = "Importación masiva de comprobantes y asientos contables vía .xlsx")
+@PreAuthorize("hasAuthority('ACCOUNTING_CREATE')")
 public class ExcelImporterController {
 
     private final ExcelImporterService excelImporterService;
 
     @PostMapping(value = "/voucher", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Importar comprobante contable desde archivo Excel .xlsx con validación atómica")
     public ResponseEntity<ImportResultResponse> importVoucher(
             @Parameter(description = "Archivo .xlsx con asientos contables")

@@ -21,6 +21,7 @@ import java.util.UUID;
 @RequestMapping({"/api/v1/taxes", "/api/v1/tax"})
 @RequiredArgsConstructor
 @Tag(name = "Impuestos y Retenciones", description = "Motores de liquidación (IVA, Retefuente, ReteICA, Impoconsumo) y plantillas contables")
+@PreAuthorize("hasAnyAuthority('ACCOUNTING_VIEW', 'SETTINGS_VIEW')")
 public class TaxController {
 
     private final TaxEngineService taxEngineService;
@@ -37,13 +38,14 @@ public class TaxController {
         return ResponseEntity.ok(taxEngineService.getTemplateById(id));
     }
 
+    @PreAuthorize("hasAnyAuthority('ACCOUNTING_VIEW', 'SETTINGS_MANAGE')")
     @PostMapping("/templates")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Crear nueva plantilla de impuesto")
     public ResponseEntity<TaxTemplateResponse> createTemplate(@Valid @RequestBody TaxTemplateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(taxEngineService.createTemplate(request));
     }
 
+    @PreAuthorize("hasAnyAuthority('ACCOUNTING_VIEW', 'SETTINGS_MANAGE')")
     @PostMapping("/calculate")
     @Operation(summary = "Simular liquidación de impuestos sobre una base gravable")
     public ResponseEntity<TaxCalculationResult> calculateTaxes(@Valid @RequestBody TaxCalculationRequest request) {

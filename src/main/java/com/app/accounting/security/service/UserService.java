@@ -20,5 +20,7 @@ public interface UserService {
 
     UserResponse toggleUserStatus(UUID id, boolean enabled);
 
+    UserResponse assignRoles(UUID id, List<String> roleCodes);
+
     void changePassword(UUID id, ChangePasswordRequest request);
 }

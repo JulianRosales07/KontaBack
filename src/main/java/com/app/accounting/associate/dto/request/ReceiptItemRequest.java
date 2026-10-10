@@ -24,8 +24,10 @@ public class ReceiptItemRequest {
     @NotNull(message = "La categoría contable es obligatoria")
     private QuotaCategory category;
 
-    @NotNull(message = "El ID de la cuenta contable es obligatorio")
+    /** ID de la cuenta; alternativamente puede enviarse accountCode. */
     private UUID accountId;
+
+    private String accountCode;
 
     @NotNull(message = "El monto es obligatorio")
     @DecimalMin(value = "0.0", inclusive = true, message = "El monto no puede ser negativo")

@@ -28,8 +28,10 @@ public class CreateAssociateReceiptRequest {
     @NotNull(message = "La fecha de pago es obligatoria")
     private LocalDate paymentDate;
 
-    @NotNull(message = "El ID de la cuenta de caja/banco es obligatorio")
+    /** ID de la cuenta de caja/banco; alternativamente cashAccountCode (por defecto 110505). */
     private UUID cashAccountId;
+
+    private String cashAccountCode;
 
     @NotNull(message = "El monto total es obligatorio")
     @DecimalMin(value = "0.01", message = "El monto total debe ser mayor a 0")

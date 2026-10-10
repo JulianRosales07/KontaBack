@@ -34,3 +34,13 @@ springdoc:
 jwt:
   secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
   expiration-ms: 86400000
+
+app:
+  organization:
+    name: ${ORGANIZATION_NAME:Asociación}
+    nit: ${ORGANIZATION_NIT:}
+  security:
+    # Solo asignación inicial: se otorga SUPER_ADMIN a este correo únicamente si aún no existe ningún SUPER_ADMIN.
+    bootstrap-super-admin-email: ${BOOTSTRAP_SUPER_ADMIN_EMAIL:juliandrosalesp@gmail.com}
+    google-client-id: ${GOOGLE_CLIENT_ID:186642839091-bfvrv5h1knk4rdpvig934i26g8s3u3hv.apps.googleusercontent.com}
+    seed-demo-users: ${SEED_DEMO_USERS:true}

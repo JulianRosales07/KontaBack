@@ -24,12 +24,13 @@ import java.util.UUID;
 @RequestMapping("/api/v1/treasury")
 @RequiredArgsConstructor
 @Tag(name = "Tesorería (Ingresos y Egresos)", description = "Recibos de Caja (CASH_IN) y Comprobantes de Egreso (CASH_OUT) con amortización de saldos y asientos contables automáticos")
+@PreAuthorize("hasAuthority('ACCOUNTING_VIEW')")
 public class TreasuryController {
 
     private final TreasuryService treasuryService;
 
+    @PreAuthorize("hasAuthority('ACCOUNTING_CREATE')")
     @PostMapping("/receipts")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR', 'AUXILIAR')")
     @Operation(summary = "Procesar transacción de tesorería: Recibo de Caja (CASH_IN) o Comprobante de Egreso (CASH_OUT)")
     public ResponseEntity<PaymentReceiptResponse> processReceipt(@Valid @RequestBody PaymentReceiptRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(treasuryService.processPaymentReceipt(request));

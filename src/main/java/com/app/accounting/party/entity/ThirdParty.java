@@ -37,4 +37,27 @@ public class ThirdParty extends AuditableEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 15)
     private PersonType type;
+
+    /** Tipo de documento de identificación (CC, NIT, CE, TI, PASAPORTE...). */
+    @Column(name = "id_type", length = 40)
+    private String idType;
+
+    @Column(length = 255)
+    private String address;
+
+    /** Clasificación libre: Asociado, Cliente, Proveedor, Empleado, Banco, Entidad. */
+    @Column(length = 30)
+    private String classification;
+
+    @Column(name = "is_associate", nullable = false)
+    @Builder.Default
+    private boolean associate = false;
+
+    @Column(name = "associate_code", length = 30)
+    private String associateCode;
+
+    /** ACTIVE | INACTIVE */
+    @Column(nullable = false, length = 15)
+    @Builder.Default
+    private String status = "ACTIVE";
 }

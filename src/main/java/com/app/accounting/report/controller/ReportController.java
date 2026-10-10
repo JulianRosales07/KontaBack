@@ -20,12 +20,12 @@ import java.util.UUID;
 @RequestMapping("/api/v1/reports")
 @RequiredArgsConstructor
 @Tag(name = "Reportes Contables y Financieros", description = "Balance de Prueba, Libro Mayor, Auxiliar por Tercero (Kárdex), Estado de Resultados (P&G) y Balance General")
+@PreAuthorize("hasAuthority('REPORTS_VIEW')")
 public class ReportController {
 
     private final ReportService reportService;
 
     @GetMapping("/trial-balance")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Generar reporte de Balance de Prueba (Trial Balance)")
     public ResponseEntity<TrialBalanceResponse> getTrialBalance(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -35,7 +35,6 @@ public class ReportController {
     }
 
     @GetMapping("/general-ledger")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Generar Libro Mayor / Auxiliar para una cuenta específica")
     public ResponseEntity<LedgerReportResponse> getGeneralLedger(
             @RequestParam String accountCode,
@@ -46,7 +45,6 @@ public class ReportController {
     }
 
     @GetMapping("/party-auxiliary")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Generar Auxiliar por Tercero y Cuenta (Kárdex de Cartera / Proveedores)")
     public ResponseEntity<PartyAuxiliaryReportResponse> getPartyAuxiliary(
             @RequestParam UUID accountId,
@@ -58,7 +56,6 @@ public class ReportController {
     }
 
     @GetMapping("/income-statement")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Generar Estado de Resultados (P&G) con cálculo de utilidad del periodo")
     public ResponseEntity<IncomeStatementResponse> getIncomeStatement(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -68,7 +65,6 @@ public class ReportController {
     }
 
     @GetMapping("/balance-sheet")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Generar Balance General (Estado de Situación Financiera) a una fecha de corte")
     public ResponseEntity<BalanceSheetResponse> getBalanceSheet(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOfDate
@@ -77,7 +73,6 @@ public class ReportController {
     }
 
     @GetMapping("/trial-balance-by-party")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Generar Balance de Prueba a nivel de Terceros (discriminado por cuenta y tercero)")
     public ResponseEntity<PartyTrialBalanceResponse> getTrialBalanceByParty(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -88,7 +83,6 @@ public class ReportController {
     }
 
     @GetMapping("/income-statement-by-party")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Generar Estado de Resultados (P&G) a nivel de Terceros (ingresos, costos y gastos por tercero)")
     public ResponseEntity<PartyIncomeStatementResponse> getIncomeStatementByParty(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -99,7 +93,6 @@ public class ReportController {
     }
 
     @GetMapping("/balance-sheet-by-party")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Generar Balance General (Situación Financiera) a nivel de Terceros a una fecha de corte")
     public ResponseEntity<PartyBalanceSheetResponse> getBalanceSheetByParty(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOfDate,

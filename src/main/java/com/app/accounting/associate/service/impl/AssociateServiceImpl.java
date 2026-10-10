@@ -78,8 +78,8 @@ public class AssociateServiceImpl implements AssociateService {
         ThirdParty associate = thirdPartyRepository.findById(request.getThirdPartyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Asociado (Tercero) no encontrado con ID: " + request.getThirdPartyId()));
 
-        Account cashAccount = accountRepository.findById(request.getCashAccountId())
-                .orElseThrow(() -> new ResourceNotFoundException("Cuenta de Caja/Banco no encontrada con ID: " + request.getCashAccountId()));
+        Account cashAccount = resolveAccount(request.getCashAccountId(),
+                request.getCashAccountCode() != null ? request.getCashAccountCode() : (request.getCashAccountId() == null ? "110505" : null));
 
         QuotaTemplate template = null;
         if (request.getTemplateId() != null) {
@@ -122,8 +122,7 @@ public class AssociateServiceImpl implements AssociateService {
 
         // Líneas Crédito: Desglose de conceptos (Administración, Aportes, Fondos)
         for (ReceiptItemRequest item : request.getItems()) {
-            Account itemAccount = accountRepository.findById(item.getAccountId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Cuenta contable no encontrada con ID: " + item.getAccountId()));
+            Account itemAccount = resolveAccount(item.getAccountId(), item.getAccountCode());
 
             entries.add(JournalEntryRequest.builder()
                     .accountId(itemAccount.getId())
@@ -163,7 +162,7 @@ public class AssociateServiceImpl implements AssociateService {
 
         List<AssociateReceiptItem> receiptItems = new ArrayList<>();
         for (ReceiptItemRequest itemReq : request.getItems()) {
-            Account acc = accountRepository.findById(itemReq.getAccountId()).orElseThrow();
+            Account acc = resolveAccount(itemReq.getAccountId(), itemReq.getAccountCode());
             receiptItems.add(AssociateReceiptItem.builder()
                     .receipt(receipt)
                     .conceptName(itemReq.getConceptName())
@@ -204,7 +203,8 @@ public class AssociateServiceImpl implements AssociateService {
         BigDecimal totalEquity = Optional.ofNullable(associateReceiptRepository.sumTotalByCategoryAndThirdParty(thirdPartyId, QuotaCategory.EQUITY_SAVING)).orElse(BigDecimal.ZERO);
         BigDecimal totalSocial = Optional.ofNullable(associateReceiptRepository.sumTotalByCategoryAndThirdParty(thirdPartyId, QuotaCategory.SOCIAL_FUND)).orElse(BigDecimal.ZERO);
         BigDecimal totalAdmin = Optional.ofNullable(associateReceiptRepository.sumTotalByCategoryAndThirdParty(thirdPartyId, QuotaCategory.INCOME)).orElse(BigDecimal.ZERO);
-        BigDecimal totalOverall = totalEquity.add(totalSocial).add(totalAdmin);
+        BigDecimal totalSavings = Optional.ofNullable(associateReceiptRepository.sumTotalByCategoryAndThirdParty(thirdPartyId, QuotaCategory.SAVINGS)).orElse(BigDecimal.ZERO);
+        BigDecimal totalOverall = totalEquity.add(totalSavings).add(totalSocial).add(totalAdmin);
 
         List<AssociateReceiptResponse> history = associateReceiptRepository
                 .findByThirdPartyIdOrderByPaymentDateDesc(thirdPartyId).stream()
@@ -218,6 +218,7 @@ public class AssociateServiceImpl implements AssociateService {
                 .email(associate.getEmail())
                 .phone(associate.getPhone())
                 .totalEquitySavings(totalEquity)
+                .totalSavings(totalSavings)
                 .totalSocialFunds(totalSocial)
                 .totalAdministrationFees(totalAdmin)
                 .totalPaidOverall(totalOverall)
@@ -231,6 +232,18 @@ public class AssociateServiceImpl implements AssociateService {
         return associateReceiptRepository.findByThirdPartyIdOrderByPaymentDateDesc(thirdPartyId).stream()
                 .map(this::mapReceiptToResponse)
                 .toList();
+    }
+
+    private Account resolveAccount(UUID id, String code) {
+        if (id != null) {
+            return accountRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Cuenta contable no encontrada con ID: " + id));
+        }
+        if (code != null && !code.isBlank()) {
+            return accountRepository.findByCode(code.trim())
+                    .orElseThrow(() -> new ResourceNotFoundException("La cuenta PUC " + code + " no existe en el plan de cuentas"));
+        }
+        throw new BusinessRuleException("Cada concepto debe indicar la cuenta contable (ID o código)");
     }
 
     private QuotaTemplateResponse mapTemplateToResponse(QuotaTemplate template) {

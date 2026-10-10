@@ -1,5 +1,6 @@
 package com.app.accounting.ai.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.app.accounting.ai.dto.CopilotChatRequest;
 import com.app.accounting.ai.dto.CopilotChatResponse;
 import com.app.accounting.ai.service.CopilotService;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/ai")
 @RequiredArgsConstructor
 @Tag(name = "Konta AI Copilot", description = "Endpoints seguros de Inteligencia Artificial para consultas contables y operativas")
+@PreAuthorize("hasAuthority('DASHBOARD_VIEW')")
 public class CopilotController {
 
     private final CopilotService copilotService;

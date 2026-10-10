@@ -22,6 +22,7 @@ public class AssociateStatementResponse {
 
     // Totals by Category
     private BigDecimal totalEquitySavings;     // Total aportes acumulados (Patrimonio reembolsable)
+    private BigDecimal totalSavings;           // Total ahorros acumulados (separado de los aportes)
     private BigDecimal totalSocialFunds;       // Total aportado a fondos sociales
     private BigDecimal totalAdministrationFees;// Total cuotas de sostenimiento pagadas
     private BigDecimal totalPaidOverall;       // Total global aportado

@@ -1,5 +1,6 @@
 package com.app.accounting.security.controller;
 
+import com.app.accounting.security.dto.request.AssignRolesRequest;
 import com.app.accounting.security.dto.request.ChangePasswordRequest;
 import com.app.accounting.security.dto.request.CreateUserRequest;
 import com.app.accounting.security.dto.request.UpdateUserRequest;
@@ -20,35 +21,35 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
-@Tag(name = "Usuarios", description = "Endpoints de administración y gestión de usuarios del sistema")
+@Tag(name = "Usuarios", description = "Gestión de usuarios del sistema (solo SUPER_ADMIN por defecto)")
 public class UserController {
 
     private final UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_CONTADOR')")
+    @PreAuthorize("hasAuthority('USERS_VIEW')")
     @Operation(summary = "Listar todos los usuarios del sistema")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_CONTADOR')")
+    @PreAuthorize("hasAuthority('USERS_VIEW')")
     @Operation(summary = "Obtener un usuario por su ID")
     public ResponseEntity<UserResponse> getUserById(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Crear un nuevo usuario con rol asignado")
+    @PreAuthorize("hasAuthority('USERS_CREATE')")
+    @Operation(summary = "Crear un nuevo usuario con roles asignados")
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Actualizar datos y rol de un usuario")
+    @PreAuthorize("hasAuthority('USERS_UPDATE')")
+    @Operation(summary = "Actualizar datos y roles de un usuario")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateUserRequest request
@@ -56,8 +57,18 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
+    @PutMapping("/{id}/roles")
+    @PreAuthorize("hasAuthority('USERS_UPDATE')")
+    @Operation(summary = "Reemplazar los roles asignados a un usuario")
+    public ResponseEntity<UserResponse> assignRoles(
+            @PathVariable UUID id,
+            @Valid @RequestBody AssignRolesRequest request
+    ) {
+        return ResponseEntity.ok(userService.assignRoles(id, request.getRoles()));
+    }
+
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('USERS_DISABLE')")
     @Operation(summary = "Activar o desactivar un usuario")
     public ResponseEntity<UserResponse> toggleStatus(
             @PathVariable UUID id,
@@ -67,8 +78,8 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/password")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Cambiar la contraseña de un usuario")
+    @PreAuthorize("hasAuthority('USERS_RESET_PASSWORD')")
+    @Operation(summary = "Restablecer la contraseña de un usuario")
     public ResponseEntity<Void> changePassword(
             @PathVariable UUID id,
             @Valid @RequestBody ChangePasswordRequest request

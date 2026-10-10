@@ -1,6 +1,5 @@
 package com.app.accounting.security.dto.request;
 
-import com.app.accounting.security.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,9 +26,6 @@ public class RegisterRequest {
     @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 6, message = "La contraseña debe tener mínimo 6 caracteres")
     private String password;
-
-    @Builder.Default
-    private Role role = Role.ROLE_ADMIN;
 
     private String fullName;
     private String phone;

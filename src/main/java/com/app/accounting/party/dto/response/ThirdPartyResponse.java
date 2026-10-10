@@ -20,4 +20,11 @@ public class ThirdPartyResponse {
     private String email;
     private String phone;
     private PersonType type;
+
+    private String idType;
+    private String address;
+    private String classification;
+    private boolean associate;
+    private String associateCode;
+    private String status;
 }

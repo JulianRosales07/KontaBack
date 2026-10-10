@@ -24,33 +24,34 @@ import java.util.UUID;
 @RequestMapping("/api/v1/vouchers")
 @RequiredArgsConstructor
 @Tag(name = "Comprobantes Contables", description = "Gestión de comprobantes, asientos y motor de partida doble")
+@PreAuthorize("hasAuthority('ACCOUNTING_VIEW')")
 public class JournalVoucherController {
 
     private final VoucherService voucherService;
 
+    @PreAuthorize("hasAuthority('ACCOUNTING_CREATE')")
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR', 'AUXILIAR')")
     @Operation(summary = "Crear y asentar comprobante contable validando partida doble")
     public ResponseEntity<JournalVoucherResponse> createAndPostVoucher(@Valid @RequestBody JournalVoucherRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(voucherService.createAndPostVoucher(request));
     }
 
+    @PreAuthorize("hasAuthority('ACCOUNTING_CREATE')")
     @PostMapping("/draft")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR', 'AUXILIAR')")
     @Operation(summary = "Crear comprobante en borrador (DRAFT)")
     public ResponseEntity<JournalVoucherResponse> createDraftVoucher(@Valid @RequestBody JournalVoucherRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(voucherService.createDraftVoucher(request));
     }
 
+    @PreAuthorize("hasAuthority('ACCOUNTING_CREATE')")
     @PostMapping("/{id}/post")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Asentar comprobante en borrador a definitivo (POSTED) con partida doble")
     public ResponseEntity<JournalVoucherResponse> postVoucher(@PathVariable UUID id) {
         return ResponseEntity.ok(voucherService.postVoucher(id));
     }
 
+    @PreAuthorize("hasAuthority('ACCOUNTING_CLOSE')")
     @PostMapping("/{id}/reverse")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Revertir comprobante asentado mediante comprobante de contrapartida")
     public ResponseEntity<JournalVoucherResponse> reverseVoucher(
             @PathVariable UUID id,
@@ -77,13 +78,15 @@ public class JournalVoucherController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) VoucherStatus status,
-            @PageableDefault(size = 20) Pageable pageable
+            @RequestParam(required = false) com.app.accounting.voucher.entity.VoucherType type,
+            @RequestParam(required = false) String q,
+            @PageableDefault(size = 20, sort = "issueDate", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(voucherService.getAllVouchers(startDate, endDate, status, pageable));
+        return ResponseEntity.ok(voucherService.getAllVouchers(startDate, endDate, status, type, q, pageable));
     }
 
+    @PreAuthorize("hasAuthority('ACCOUNTING_CREATE')")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Eliminar comprobante en borrador (DRAFT)")
     public ResponseEntity<Void> deleteDraftVoucher(@PathVariable UUID id) {
         voucherService.deleteDraftVoucher(id);

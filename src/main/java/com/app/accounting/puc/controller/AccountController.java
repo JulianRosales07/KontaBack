@@ -22,19 +22,20 @@ import java.util.UUID;
 @RequestMapping({"/api/v1/accounts", "/api/v1/puc"})
 @RequiredArgsConstructor
 @Tag(name = "Cuentas Contables (PUC)", description = "Gestión del catálogo de cuentas jerárquico PUC")
+@PreAuthorize("hasAuthority('PUC_VIEW')")
 public class AccountController {
 
     private final AccountService accountService;
 
+    @PreAuthorize("hasAuthority('PUC_MANAGE')")
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Crear una nueva cuenta contable PUC")
     public ResponseEntity<AccountResponse> createAccount(@Valid @RequestBody AccountRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(accountService.createAccount(request));
     }
 
+    @PreAuthorize("hasAuthority('PUC_MANAGE')")
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Actualizar una cuenta contable existente")
     public ResponseEntity<AccountResponse> updateAccount(@PathVariable UUID id, @Valid @RequestBody AccountRequest request) {
         return ResponseEntity.ok(accountService.updateAccount(id, request));
@@ -66,8 +67,8 @@ public class AccountController {
         return ResponseEntity.ok(accountService.getAllActiveAccounts());
     }
 
+    @PreAuthorize("hasAuthority('PUC_MANAGE')")
     @PostMapping(value = "/import-puc", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Importar catálogo de cuentas PUC desde archivo Excel (.xlsx)")
     public ResponseEntity<com.app.accounting.puc.dto.response.PucImportResultResponse> importPuc(
             @RequestPart("file") org.springframework.web.multipart.MultipartFile file
@@ -79,8 +80,8 @@ public class AccountController {
         }
     }
 
+    @PreAuthorize("hasAuthority('PUC_MANAGE')")
     @PostMapping("/import-default-puc")
-    @PreAuthorize("hasAnyRole('ADMIN', 'CONTADOR')")
     @Operation(summary = "Importar catálogo PUC desde el archivo predeterminado del sistema (Docs/PUC_Cuentas_Comerciantes.xlsx)")
     public ResponseEntity<com.app.accounting.puc.dto.response.PucImportResultResponse> importDefaultPuc() {
         return ResponseEntity.ok(accountService.importDefaultPuc());
