@@ -44,8 +44,7 @@ ALTER TABLE users ALTER COLUMN role DROP NOT NULL;
 -- Roles base
 INSERT INTO roles (id, code, name, description, is_system, created_by) VALUES
     (CAST('b0000000-0000-0000-0000-000000000001' AS UUID), 'SUPER_ADMIN', 'Super Administrador', 'Acceso total, incluida la gestión de usuarios, roles y permisos', TRUE, 'SYSTEM'),
-    (CAST('b0000000-0000-0000-0000-000000000002' AS UUID), 'ADMINISTRADOR', 'Administrador', 'Acceso a todos los módulos funcionales excepto gestión de accesos', TRUE, 'SYSTEM')
-ON CONFLICT (code) DO NOTHING;
+    (CAST('b0000000-0000-0000-0000-000000000002' AS UUID), 'ADMINISTRADOR', 'Administrador', 'Acceso a todos los módulos funcionales excepto gestión de accesos', TRUE, 'SYSTEM');
 
 -- Permisos granulares
 INSERT INTO permissions (id, code, name, module) VALUES
@@ -77,31 +76,26 @@ INSERT INTO permissions (id, code, name, module) VALUES
     (CAST('b1000000-0000-0000-0000-000000000027' AS UUID), 'REPORTS_VIEW', 'Ver reportes financieros', 'REPORTS'),
     (CAST('b1000000-0000-0000-0000-000000000028' AS UUID), 'REPORTS_EXPORT', 'Exportar reportes (PDF / Excel)', 'REPORTS'),
     (CAST('b1000000-0000-0000-0000-000000000029' AS UUID), 'SETTINGS_VIEW', 'Ver configuración', 'SETTINGS'),
-    (CAST('b1000000-0000-0000-0000-000000000030' AS UUID), 'SETTINGS_MANAGE', 'Modificar configuración', 'SETTINGS')
-ON CONFLICT (code) DO NOTHING;
+    (CAST('b1000000-0000-0000-0000-000000000030' AS UUID), 'SETTINGS_MANAGE', 'Modificar configuración', 'SETTINGS');
 
 -- SUPER_ADMIN: todos los permisos
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT CAST('b0000000-0000-0000-0000-000000000001' AS UUID), p.id FROM permissions p
-ON CONFLICT DO NOTHING;
+SELECT CAST('b0000000-0000-0000-0000-000000000001' AS UUID), p.id FROM permissions p;
 
 -- ADMINISTRADOR: todo excepto gestión de accesos
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT CAST('b0000000-0000-0000-0000-000000000002' AS UUID), p.id FROM permissions p
-WHERE p.module NOT IN ('USERS', 'ROLES', 'PERMISSIONS')
-ON CONFLICT DO NOTHING;
+WHERE p.module NOT IN ('USERS', 'ROLES', 'PERMISSIONS');
 
 -- Asignación inicial de SUPER_ADMIN por correo (solo asignación de datos, no regla de autorización)
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, CAST('b0000000-0000-0000-0000-000000000001' AS UUID)
 FROM users u
-WHERE LOWER(u.email) = 'juliandrosalesp@gmail.com'
-ON CONFLICT DO NOTHING;
+WHERE LOWER(u.email) = 'juliandrosalesp@gmail.com';
 
 -- Usuarios existentes con rol legado conservan acceso funcional como ADMINISTRADOR
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, CAST('b0000000-0000-0000-0000-000000000002' AS UUID)
 FROM users u
 WHERE u.role IS NOT NULL
-  AND LOWER(u.email) <> 'juliandrosalesp@gmail.com'
-ON CONFLICT DO NOTHING;
+  AND LOWER(u.email) <> 'juliandrosalesp@gmail.com';
