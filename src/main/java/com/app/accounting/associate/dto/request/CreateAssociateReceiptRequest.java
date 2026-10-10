@@ -37,9 +37,12 @@ public class CreateAssociateReceiptRequest {
     @DecimalMin(value = "0.01", message = "El monto total debe ser mayor a 0")
     private BigDecimal totalAmount;
 
-    @NotEmpty(message = "Debe incluir al menos un concepto en el desglose")
+    /** Conceptos del recibo. Puede ir vacío si el recibo solo paga multas ({@link #fineIds}). */
     @Valid
     private List<ReceiptItemRequest> items;
+
+    /** Multas pendientes del asociado que se pagan en este recibo (se agregan como ingreso 429510). */
+    private List<UUID> fineIds;
 
     private String notes;
 

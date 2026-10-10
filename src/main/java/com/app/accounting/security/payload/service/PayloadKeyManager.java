@@ -43,6 +43,9 @@ public class PayloadKeyManager {
                 KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
                 kpg.initialize(2048, new SecureRandom());
                 KeyPair kp = kpg.generateKeyPair();
+                // Llave nueva en cada arranque: identificador propio para que los navegadores con la llave anterior
+                // en caché la detecten (con el mismo identificador seguían cifrando con una llave que ya no existe)
+                currentKeyId = currentKeyId + "-" + java.util.HexFormat.of().formatHex(SecureRandom.getSeed(4));
                 keyPairsById.put(currentKeyId, kp);
                 log.info("Initialized runtime ephemeral RSA keypair for secure payload. KeyId: {}", currentKeyId);
             }

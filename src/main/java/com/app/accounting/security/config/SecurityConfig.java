@@ -66,6 +66,19 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * El filtro del canal cifrado es un @Component: sin esto Spring Boot también lo registraría como filtro global,
+     * antes de la cadena de seguridad (y antes de CORS). Solo debe ejecutarse dentro de la cadena.
+     */
+    @Bean
+    public org.springframework.boot.web.servlet.FilterRegistrationBean<com.app.accounting.security.payload.filter.ProtectedPayloadFilter> protectedPayloadFilterRegistration(
+            com.app.accounting.security.payload.filter.ProtectedPayloadFilter filter) {
+        org.springframework.boot.web.servlet.FilterRegistrationBean<com.app.accounting.security.payload.filter.ProtectedPayloadFilter> registration =
+                new org.springframework.boot.web.servlet.FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -78,7 +91,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
-                .addFilterBefore(protectedPayloadFilter, org.springframework.security.web.context.SecurityContextHolderFilter.class)
+                // Después de CORS: si el canal cifrado rechaza la petición, la respuesta lleva las cabeceras CORS y el
+                // navegador puede leer el error (antes se veía como "No se pudo conectar con el servidor")
+                .addFilterAfter(protectedPayloadFilter, org.springframework.web.filter.CorsFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.sameOrigin())

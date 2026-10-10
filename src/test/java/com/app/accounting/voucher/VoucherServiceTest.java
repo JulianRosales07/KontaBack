@@ -57,6 +57,9 @@ class VoucherServiceTest {
     @Spy
     private JournalVoucherMapper voucherMapper = Mappers.getMapper(JournalVoucherMapper.class);
 
+    @Mock
+    private com.app.accounting.fine.AssociateFineRepository fineRepository;
+
     @InjectMocks
     private VoucherServiceImpl voucherService;
 

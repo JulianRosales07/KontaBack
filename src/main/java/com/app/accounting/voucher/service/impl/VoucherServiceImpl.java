@@ -56,6 +56,7 @@ public class VoucherServiceImpl implements VoucherService {
     private final ThirdPartyService thirdPartyService;
     private final JournalVoucherMapper voucherMapper;
     private final AccountingPeriodService accountingPeriodService;
+    private final com.app.accounting.fine.AssociateFineRepository fineRepository;
 
     @Override
     @Transactional
@@ -144,6 +145,15 @@ public class VoucherServiceImpl implements VoucherService {
         }
 
         validateDoubleEntry(reversal);
+
+        // Las multas pagadas con este comprobante vuelven a quedar pendientes
+        for (com.app.accounting.fine.AssociateFine fine : fineRepository.findByVoucherId(original.getId())) {
+            fine.setStatus(com.app.accounting.fine.AssociateFine.Status.PENDING);
+            fine.setPaidDate(null);
+            fine.setReceiptNumber(null);
+            fine.setVoucher(null);
+            fineRepository.save(fine);
+        }
 
         original.setStatus(VoucherStatus.VOIDED);
         original.setDescription(original.getDescription() + " [REVERTIDO POR COMPROBANTE " + reverseNumber + "]");

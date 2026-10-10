@@ -56,6 +56,7 @@ public class AssociateServiceImpl implements AssociateService {
     private final com.app.accounting.common.document.PdfExportService pdfExportService;
     private final com.app.accounting.common.document.ExcelExportService excelExportService;
     private final com.app.accounting.loan.service.LoanService loanService;
+    private final com.app.accounting.fine.FineService fineService;
 
     @Override
     @Transactional(readOnly = true)
@@ -81,6 +82,26 @@ public class AssociateServiceImpl implements AssociateService {
 
         Account cashAccount = resolveAccount(request.getCashAccountId(),
                 request.getCashAccountCode() != null ? request.getCashAccountCode() : (request.getCashAccountId() == null ? "110505" : null));
+
+        // Multas pendientes incluidas en el recibo: se agregan como conceptos de ingreso 429510 y se marcan pagadas
+        List<com.app.accounting.fine.AssociateFine> fines = request.getFineIds() == null || request.getFineIds().isEmpty()
+                ? List.of() : fineService.pending(request.getFineIds(), associate.getId());
+        if (!fines.isEmpty()) {
+            fineService.ensureIncomeAccount();
+            List<ReceiptItemRequest> items = new ArrayList<>(request.getItems() != null ? request.getItems() : List.of());
+            for (com.app.accounting.fine.AssociateFine fine : fines) {
+                items.add(ReceiptItemRequest.builder()
+                        .conceptName(com.app.accounting.fine.FineService.fineLabel(fine))
+                        .category(com.app.accounting.associate.entity.QuotaCategory.INCOME)
+                        .accountCode(com.app.accounting.association.AssociationChart.FINES)
+                        .amount(fine.getAmount())
+                        .build());
+            }
+            request.setItems(items);
+        }
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new BusinessRuleException("Debe incluir al menos un concepto en el desglose");
+        }
 
         QuotaTemplate template = null;
         if (request.getTemplateId() != null) {
@@ -176,6 +197,10 @@ public class AssociateServiceImpl implements AssociateService {
 
         AssociateReceipt saved = associateReceiptRepository.save(receipt);
         log.info("Recaudo de asociado registrado exitosamente: {} por valor de ${}", receiptNumber, request.getTotalAmount());
+
+        if (!fines.isEmpty()) {
+            fineService.markPaid(fines, receiptNumber, voucherEntity, request.getPaymentDate());
+        }
 
         AssociateReceiptResponse response = mapReceiptToResponse(saved);
 

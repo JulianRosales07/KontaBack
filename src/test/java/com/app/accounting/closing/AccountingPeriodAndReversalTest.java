@@ -55,6 +55,9 @@ class AccountingPeriodAndReversalTest {
     @Spy
     private JournalVoucherMapper voucherMapper = Mappers.getMapper(JournalVoucherMapper.class);
 
+    @Mock
+    private com.app.accounting.fine.AssociateFineRepository fineRepository;
+
     private VoucherServiceImpl voucherService;
 
     @BeforeEach
@@ -64,7 +67,8 @@ class AccountingPeriodAndReversalTest {
                 null,
                 null,
                 voucherMapper,
-                periodService
+                periodService,
+                fineRepository
         );
     }
 

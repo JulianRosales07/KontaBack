@@ -66,6 +66,11 @@ public class DatabaseCleanupService {
                 jdbcTemplate.update("UPDATE debt_documents SET voucher_id = NULL WHERE voucher_id IS NOT NULL");
             } catch (Exception ignored) {}
 
+            // Las multas pagadas quedarían sin su comprobante: se eliminan junto con la contabilidad
+            try {
+                summary.put("Multas de asociados", jdbcTemplate.update("DELETE FROM associate_fines"));
+            } catch (Exception ignored) {}
+
             int entries = jdbcTemplate.update("DELETE FROM journal_entries");
             int vouchers = jdbcTemplate.update("DELETE FROM journal_vouchers");
             summary.put("Asientos contables", entries);
