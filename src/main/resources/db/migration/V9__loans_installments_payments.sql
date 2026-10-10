@@ -19,31 +19,36 @@ INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_p
 SELECT CAST('13650000-0000-0000-0000-000000000001' AS UUID), '1365', 'CUENTAS POR COBRAR A TRABAJADORES Y ASOCIADOS', 3, 'DEBIT',
        (SELECT id FROM accounts WHERE code = '13'), FALSE, TRUE, 'SYSTEM'
 WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '1365')
-  AND EXISTS (SELECT 1 FROM accounts WHERE code = '13');
+  AND EXISTS (SELECT 1 FROM accounts WHERE code = '13')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
 SELECT CAST('13650500-0000-0000-0000-000000000001' AS UUID), '136505', 'PRESTAMOS A ASOCIADOS', 4, 'DEBIT',
        (SELECT id FROM accounts WHERE code = '1365'), TRUE, TRUE, 'SYSTEM'
 WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '136505')
-  AND EXISTS (SELECT 1 FROM accounts WHERE code = '1365');
+  AND EXISTS (SELECT 1 FROM accounts WHERE code = '1365')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
 SELECT CAST('42000000-0000-0000-0000-000000000001' AS UUID), '42', 'NO OPERACIONALES', 2, 'CREDIT',
        (SELECT id FROM accounts WHERE code = '4'), FALSE, TRUE, 'SYSTEM'
 WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '42')
-  AND EXISTS (SELECT 1 FROM accounts WHERE code = '4');
+  AND EXISTS (SELECT 1 FROM accounts WHERE code = '4')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
 SELECT CAST('42100000-0000-0000-0000-000000000001' AS UUID), '4210', 'FINANCIEROS', 3, 'CREDIT',
        (SELECT id FROM accounts WHERE code = '42'), FALSE, TRUE, 'SYSTEM'
 WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '4210')
-  AND EXISTS (SELECT 1 FROM accounts WHERE code = '42');
+  AND EXISTS (SELECT 1 FROM accounts WHERE code = '4210')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
 SELECT CAST('42100500-0000-0000-0000-000000000001' AS UUID), '421005', 'INTERESES SOBRE PRESTAMOS A ASOCIADOS', 4, 'CREDIT',
        (SELECT id FROM accounts WHERE code = '4210'), FALSE, TRUE, 'SYSTEM'
 WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '421005')
-  AND EXISTS (SELECT 1 FROM accounts WHERE code = '4210');
+  AND EXISTS (SELECT 1 FROM accounts WHERE code = '4210')
+ON CONFLICT DO NOTHING;
 
 -- 3. Préstamos
 CREATE TABLE IF NOT EXISTS loans (

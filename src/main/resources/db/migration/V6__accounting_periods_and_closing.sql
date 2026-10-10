@@ -22,32 +22,50 @@ CREATE INDEX IF NOT EXISTS idx_period_year_month ON accounting_periods(period_ye
 CREATE INDEX IF NOT EXISTS idx_period_status ON accounting_periods(status);
 
 -- 2. Cuentas PUC para el Cierre de Cuentas de Resultado (Clases 4, 5, 6, 7) y Traslado a Patrimonio
--- Cuenta 5905: Ganancias y Pérdidas
-INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
-VALUES ('59000000-0000-0000-0000-000000000001', '59', 'GANANCIAS Y PERDIDAS', 2, 'DEBIT', '50000000-0000-0000-0000-000000000001', FALSE, TRUE, 'SYSTEM');
+-- Idempotente: cada cuenta se crea solo si su código no existe, y la cuenta padre se busca por código
+-- (en bases con el PUC completo ya cargado, estas cuentas existen con otros IDs).
 
 INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
-VALUES ('59050000-0000-0000-0000-000000000001', '5905', 'GANANCIAS Y PERDIDAS', 3, 'DEBIT', '59000000-0000-0000-0000-000000000001', FALSE, TRUE, 'SYSTEM');
+SELECT CAST('59000000-0000-0000-0000-000000000001' AS UUID), '59', 'GANANCIAS Y PERDIDAS', 2, 'DEBIT', (SELECT id FROM accounts WHERE code = '5'), FALSE, TRUE, 'SYSTEM'
+WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '59')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
-VALUES ('59050500-0000-0000-0000-000000000001', '590505', 'GANANCIAS Y PERDIDAS', 4, 'DEBIT', '59050000-0000-0000-0000-000000000001', FALSE, TRUE, 'SYSTEM');
-
--- Grupo 36: Resultados del Ejercicio y Cuentas de Utilidad (3605) / Pérdida (3610)
-INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
-VALUES ('36000000-0000-0000-0000-000000000001', '36', 'RESULTADOS DEL EJERCICIO', 2, 'CREDIT', '30000000-0000-0000-0000-000000000001', FALSE, TRUE, 'SYSTEM');
+SELECT CAST('59050000-0000-0000-0000-000000000001' AS UUID), '5905', 'GANANCIAS Y PERDIDAS', 3, 'DEBIT', (SELECT id FROM accounts WHERE code = '59'), FALSE, TRUE, 'SYSTEM'
+WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '5905')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
-VALUES ('36050000-0000-0000-0000-000000000001', '3605', 'UTILIDAD DEL EJERCICIO', 3, 'CREDIT', '36000000-0000-0000-0000-000000000001', FALSE, TRUE, 'SYSTEM');
+SELECT CAST('59050500-0000-0000-0000-000000000001' AS UUID), '590505', 'GANANCIAS Y PERDIDAS', 4, 'DEBIT', (SELECT id FROM accounts WHERE code = '5905'), FALSE, TRUE, 'SYSTEM'
+WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '590505')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
-VALUES ('36050500-0000-0000-0000-000000000001', '360505', 'UTILIDAD DEL EJERCICIO', 4, 'CREDIT', '36050000-0000-0000-0000-000000000001', FALSE, TRUE, 'SYSTEM');
+SELECT CAST('36000000-0000-0000-0000-000000000001' AS UUID), '36', 'RESULTADOS DEL EJERCICIO', 2, 'CREDIT', (SELECT id FROM accounts WHERE code = '3'), FALSE, TRUE, 'SYSTEM'
+WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '36')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
-VALUES ('36100000-0000-0000-0000-000000000001', '3610', 'PERDIDA DEL EJERCICIO', 3, 'DEBIT', '36000000-0000-0000-0000-000000000001', FALSE, TRUE, 'SYSTEM');
+SELECT CAST('36050000-0000-0000-0000-000000000001' AS UUID), '3605', 'UTILIDAD DEL EJERCICIO', 3, 'CREDIT', (SELECT id FROM accounts WHERE code = '36'), FALSE, TRUE, 'SYSTEM'
+WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '3605')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
-VALUES ('36100500-0000-0000-0000-000000000001', '361005', 'PERDIDA DEL EJERCICIO', 4, 'DEBIT', '36100000-0000-0000-0000-000000000001', FALSE, TRUE, 'SYSTEM');
+SELECT CAST('36050500-0000-0000-0000-000000000001' AS UUID), '360505', 'UTILIDAD DEL EJERCICIO', 4, 'CREDIT', (SELECT id FROM accounts WHERE code = '3605'), FALSE, TRUE, 'SYSTEM'
+WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '360505')
+ON CONFLICT DO NOTHING;
 
--- Clase 7: Costos de Producción
 INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
-VALUES ('70000000-0000-0000-0000-000000000001', '7', 'COSTOS DE PRODUCCION O DE OPERACION', 1, 'DEBIT', NULL, FALSE, TRUE, 'SYSTEM');
+SELECT CAST('36100000-0000-0000-0000-000000000001' AS UUID), '3610', 'PERDIDA DEL EJERCICIO', 3, 'DEBIT', (SELECT id FROM accounts WHERE code = '36'), FALSE, TRUE, 'SYSTEM'
+WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '3610')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
+SELECT CAST('36100500-0000-0000-0000-000000000001' AS UUID), '361005', 'PERDIDA DEL EJERCICIO', 4, 'DEBIT', (SELECT id FROM accounts WHERE code = '3610'), FALSE, TRUE, 'SYSTEM'
+WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '361005')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO accounts (id, code, name, level, nature, parent_id, requires_third_party, is_active, created_by)
+SELECT CAST('70000000-0000-0000-0000-000000000001' AS UUID), '7', 'COSTOS DE PRODUCCION O DE OPERACION', 1, 'DEBIT', NULL, FALSE, TRUE, 'SYSTEM'
+WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE code = '7')
+ON CONFLICT DO NOTHING;
