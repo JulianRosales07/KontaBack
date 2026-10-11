@@ -61,3 +61,6 @@ app:
     bootstrap-super-admin-email: ${BOOTSTRAP_SUPER_ADMIN_EMAIL:juliandrosalesp@gmail.com}
     google-client-id: ${GOOGLE_CLIENT_ID:186642839091-bfvrv5h1knk4rdpvig934i26g8s3u3hv.apps.googleusercontent.com}
     seed-demo-users: ${SEED_DEMO_USERS:false}
+  keepalive:
+    enabled: ${RENDER_KEEPALIVE_ENABLED:true}
+    url: ${RENDER_EXTERNAL_URL:https://kontaback.onrender.com/api/v1/security/public-key}
