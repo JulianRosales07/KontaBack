@@ -24,12 +24,12 @@ import java.util.UUID;
 @RequestMapping("/api/v1/vouchers")
 @RequiredArgsConstructor
 @Tag(name = "Comprobantes Contables", description = "Gestión de comprobantes, asientos y motor de partida doble")
-@PreAuthorize("hasAuthority('ACCOUNTING_VIEW')")
+@PreAuthorize("hasAnyAuthority('ACCOUNTING_VIEW', 'COLLECTIONS_VIEW')")
 public class JournalVoucherController {
 
     private final VoucherService voucherService;
 
-    @PreAuthorize("hasAuthority('ACCOUNTING_CREATE')")
+    @PreAuthorize("hasAnyAuthority('ACCOUNTING_CREATE', 'COLLECTIONS_CREATE')")
     @PostMapping
     @Operation(summary = "Crear y asentar comprobante contable validando partida doble")
     public ResponseEntity<JournalVoucherResponse> createAndPostVoucher(@Valid @RequestBody JournalVoucherRequest request) {
