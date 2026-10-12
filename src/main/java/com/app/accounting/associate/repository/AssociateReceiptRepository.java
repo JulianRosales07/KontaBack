@@ -30,6 +30,12 @@ public interface AssociateReceiptRepository extends JpaRepository<AssociateRecei
             "FROM AssociateReceipt r JOIN r.items i GROUP BY r.thirdParty.id, i.category")
     List<Object[]> aggregateByThirdPartyAndCategory();
 
+    /** Agregado detallado por asociado, categoría, código de cuenta y concepto: [thirdPartyId, category, accountCode, conceptName, suma, nº recibos, última fecha]. */
+    @Query("SELECT r.thirdParty.id, i.category, a.code, i.conceptName, COALESCE(SUM(i.amount), 0), COUNT(DISTINCT r.id), MAX(r.paymentDate) " +
+            "FROM AssociateReceipt r JOIN r.items i LEFT JOIN i.account a " +
+            "GROUP BY r.thirdParty.id, i.category, a.code, i.conceptName")
+    List<Object[]> aggregateByThirdPartyDetailed();
+
     @Query("SELECT DISTINCT r FROM AssociateReceipt r JOIN FETCH r.thirdParty LEFT JOIN FETCH r.items i LEFT JOIN FETCH i.account " +
             "LEFT JOIN FETCH r.cashAccount LEFT JOIN FETCH r.voucher WHERE r.paymentDate BETWEEN :from AND :to ORDER BY r.paymentDate ASC")
     List<AssociateReceipt> findByPaymentDateBetweenWithDetails(@Param("from") java.time.LocalDate from, @Param("to") java.time.LocalDate to);

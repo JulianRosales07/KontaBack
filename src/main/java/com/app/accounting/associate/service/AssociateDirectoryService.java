@@ -115,17 +115,27 @@ public class AssociateDirectoryService {
         Map<UUID, Long> movements = new HashMap<>();
         Map<UUID, LocalDate> lastMovement = new HashMap<>();
 
-        for (Object[] row : receiptRepository.aggregateByThirdPartyAndCategory()) {
+        for (Object[] row : receiptRepository.aggregateByThirdPartyDetailed()) {
             UUID partyId = (UUID) row[0];
             QuotaCategory category = (QuotaCategory) row[1];
-            BigDecimal sum = (BigDecimal) row[2];
-            long count = ((Number) row[3]).longValue();
-            LocalDate last = (LocalDate) row[4];
-            if (category == QuotaCategory.EQUITY_SAVING) {
-                contributions.merge(partyId, sum, BigDecimal::add);
-                movements.merge(partyId, count, Math::max);
-            } else if (category == QuotaCategory.SAVINGS) {
+            String code = row[2] != null ? (String) row[2] : "";
+            String name = row[3] != null ? (String) row[3] : "";
+            BigDecimal sum = (BigDecimal) row[4];
+            long count = ((Number) row[5]).longValue();
+            LocalDate last = (LocalDate) row[6];
+
+            boolean isSaving = category == QuotaCategory.SAVINGS
+                    || "311510".equals(code)
+                    || "238035".equals(code)
+                    || (name != null && (name.toLowerCase().contains("extra") || name.toLowerCase().contains("ahorro")));
+
+            boolean isContribution = !isSaving && (category == QuotaCategory.EQUITY_SAVING || "311505".equals(code));
+
+            if (isSaving) {
                 savings.merge(partyId, sum, BigDecimal::add);
+                movements.merge(partyId, count, Math::max);
+            } else if (isContribution) {
+                contributions.merge(partyId, sum, BigDecimal::add);
                 movements.merge(partyId, count, Math::max);
             }
             if (last != null) {
