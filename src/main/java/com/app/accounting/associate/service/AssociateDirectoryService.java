@@ -124,12 +124,21 @@ public class AssociateDirectoryService {
             long count = ((Number) row[5]).longValue();
             LocalDate last = (LocalDate) row[6];
 
-            boolean isSaving = category == QuotaCategory.SAVINGS
+            // 311505 = Aportes Sociales Ordinarios (Patrimonio) -> Aportes
+            // 311510 = Aportes Extraordinarios / Ahorro Extra -> Ahorros
+            // 238035 = Turismo y Recreación / Ahorros (Pasivo) -> Ahorros
+            // QuotaCategory.SAVINGS -> Ahorros
+            boolean isContribution = "311505".equals(code)
+                    || (!"311510".equals(code) && !"238035".equals(code)
+                        && category == QuotaCategory.EQUITY_SAVING
+                        && (name == null || !name.toLowerCase().contains("extra")));
+
+            boolean isSaving = !isContribution && (
+                    category == QuotaCategory.SAVINGS
                     || "311510".equals(code)
                     || "238035".equals(code)
-                    || (name != null && (name.toLowerCase().contains("extra") || name.toLowerCase().contains("ahorro")));
-
-            boolean isContribution = !isSaving && (category == QuotaCategory.EQUITY_SAVING || "311505".equals(code));
+                    || (name != null && (name.toLowerCase().contains("extra") || name.toLowerCase().contains("voluntario") || name.toLowerCase().contains("ahorro")))
+            );
 
             if (isSaving) {
                 savings.merge(partyId, sum, BigDecimal::add);

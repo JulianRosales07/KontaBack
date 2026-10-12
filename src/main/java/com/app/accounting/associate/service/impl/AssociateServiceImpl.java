@@ -250,39 +250,14 @@ public class AssociateServiceImpl implements AssociateService {
         ThirdParty associate = thirdPartyRepository.findById(thirdPartyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Asociado no encontrado con ID: " + thirdPartyId));
 
-        List<AssociateReceipt> receipts = associateReceiptRepository.findByThirdPartyIdOrderByPaymentDateDesc(thirdPartyId);
-
-        BigDecimal totalEquity = BigDecimal.ZERO;
-        BigDecimal totalSavings = BigDecimal.ZERO;
-        BigDecimal totalSocial = BigDecimal.ZERO;
-        BigDecimal totalAdmin = BigDecimal.ZERO;
-
-        for (AssociateReceipt r : receipts) {
-            for (AssociateReceiptItem i : r.getItems()) {
-                String code = i.getAccount() != null ? i.getAccount().getCode() : "";
-                String name = i.getConceptName() != null ? i.getConceptName().toLowerCase() : "";
-                BigDecimal amt = i.getAmount() != null ? i.getAmount() : BigDecimal.ZERO;
-
-                boolean isSaving = i.getCategory() == QuotaCategory.SAVINGS
-                        || "311510".equals(code)
-                        || "238035".equals(code)
-                        || name.contains("extra")
-                        || name.contains("ahorro");
-
-                if (isSaving) {
-                    totalSavings = totalSavings.add(amt);
-                } else if (i.getCategory() == QuotaCategory.EQUITY_SAVING || "311505".equals(code)) {
-                    totalEquity = totalEquity.add(amt);
-                } else if (i.getCategory() == QuotaCategory.SOCIAL_FUND) {
-                    totalSocial = totalSocial.add(amt);
-                } else if (i.getCategory() == QuotaCategory.INCOME) {
-                    totalAdmin = totalAdmin.add(amt);
-                }
-            }
-        }
+        BigDecimal totalEquity = Optional.ofNullable(associateReceiptRepository.sumTotalByCategoryAndThirdParty(thirdPartyId, QuotaCategory.EQUITY_SAVING)).orElse(BigDecimal.ZERO);
+        BigDecimal totalSocial = Optional.ofNullable(associateReceiptRepository.sumTotalByCategoryAndThirdParty(thirdPartyId, QuotaCategory.SOCIAL_FUND)).orElse(BigDecimal.ZERO);
+        BigDecimal totalAdmin = Optional.ofNullable(associateReceiptRepository.sumTotalByCategoryAndThirdParty(thirdPartyId, QuotaCategory.INCOME)).orElse(BigDecimal.ZERO);
+        BigDecimal totalSavings = Optional.ofNullable(associateReceiptRepository.sumTotalByCategoryAndThirdParty(thirdPartyId, QuotaCategory.SAVINGS)).orElse(BigDecimal.ZERO);
         BigDecimal totalOverall = totalEquity.add(totalSavings).add(totalSocial).add(totalAdmin);
 
-        List<AssociateReceiptResponse> history = receipts.stream()
+        List<AssociateReceiptResponse> history = associateReceiptRepository
+                .findByThirdPartyIdOrderByPaymentDateDesc(thirdPartyId).stream()
                 .map(this::mapReceiptToResponse)
                 .toList();
 
