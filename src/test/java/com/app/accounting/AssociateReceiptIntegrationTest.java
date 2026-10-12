@@ -106,6 +106,11 @@ public class AssociateReceiptIntegrationTest {
         assertEquals(0, statement.getTotalSocialFunds().compareTo(new BigDecimal("13750.0000")), "Fondos sociales deben ser $13.750 (5250 + 5500 + 2000 + 1000)");
         assertEquals(0, statement.getTotalPaidOverall().compareTo(new BigDecimal("50000.0000")));
 
-        System.out.println(">>> Test exitoso! Recibo generado: " + receipt.getReceiptNumber() + " | Comprobante: " + voucher.getVoucherNumber());
+        // 8. Generar PDF oficial del recibo de caja de asociado
+        byte[] pdf = associateService.generateAssociateReceiptPdf(receipt.getId());
+        assertNotNull(pdf);
+        assertTrue(pdf.length > 0, "El PDF del recibo debe generarse con contenido en bytes");
+
+        System.out.println(">>> Test exitoso! Recibo generado: " + receipt.getReceiptNumber() + " | Comprobante: " + voucher.getVoucherNumber() + " | PDF bytes: " + pdf.length);
     }
 }
