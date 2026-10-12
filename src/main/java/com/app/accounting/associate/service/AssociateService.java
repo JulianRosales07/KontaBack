@@ -19,6 +19,8 @@ public interface AssociateService {
     AssociateStatementResponse getAssociateStatement(UUID thirdPartyId);
 
     byte[] generateAssociateReceiptPdf(UUID id);
+    void sendReceiptEmail(UUID id);
     byte[] exportAssociateStatement(UUID thirdPartyId, String format);
     List<AssociateReceiptResponse> getReceiptsByAssociate(UUID thirdPartyId);
 }
+

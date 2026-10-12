@@ -57,6 +57,7 @@ public class AssociateServiceImpl implements AssociateService {
     private final com.app.accounting.common.document.ExcelExportService excelExportService;
     private final com.app.accounting.loan.service.LoanService loanService;
     private final com.app.accounting.fine.FineService fineService;
+    private final com.app.accounting.common.service.EmailService emailService;
 
     @Override
     @Transactional(readOnly = true)
@@ -387,5 +388,25 @@ public class AssociateServiceImpl implements AssociateService {
             return excelExportService.generateAssociateStatementExcel(statement);
         }
         return pdfExportService.generateAssociateStatementPdf(statement);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void sendReceiptEmail(UUID id) {
+        AssociateReceipt receipt = associateReceiptRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Recibo de asociado no encontrado con ID: " + id));
+
+        if (receipt.getThirdParty() == null || receipt.getThirdParty().getEmail() == null || receipt.getThirdParty().getEmail().isBlank()) {
+            throw new BusinessRuleException("El asociado no tiene una dirección de correo electrónico registrada.");
+        }
+
+        byte[] pdf = generateAssociateReceiptPdf(id);
+        emailService.sendAssociateReceiptEmailWithPdf(
+                receipt.getThirdParty().getEmail(),
+                receipt.getReceiptNumber(),
+                receipt.getThirdParty().getFullName(),
+                receipt.getTotalAmount(),
+                pdf
+        );
     }
 }

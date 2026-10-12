@@ -72,6 +72,14 @@ public class AssociateController {
         return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
     }
 
+    @PostMapping("/receipts/{id}/send-email")
+    @Operation(summary = "Enviar el recibo oficial con el PDF adjunto al correo del asociado")
+    public ResponseEntity<Void> sendReceiptEmail(@PathVariable UUID id) {
+        associateService.sendReceiptEmail(id);
+        return ResponseEntity.ok().build();
+    }
+
+
     @GetMapping("/{thirdPartyId}/receipts")
     @Operation(summary = "Obtener historial de recibos emitidos a un asociado específico")
     public ResponseEntity<List<AssociateReceiptResponse>> getReceiptsByAssociate(@PathVariable UUID thirdPartyId) {

@@ -111,6 +111,11 @@ public class AssociateReceiptIntegrationTest {
         assertNotNull(pdf);
         assertTrue(pdf.length > 0, "El PDF del recibo debe generarse con contenido en bytes");
 
+        // 9. Verificar intento de envío por correo con PDF adjunto (valida control de configuración de API Key)
+        assertThrows(com.app.accounting.common.exception.BusinessRuleException.class, () -> {
+            associateService.sendReceiptEmail(receipt.getId());
+        });
+
         System.out.println(">>> Test exitoso! Recibo generado: " + receipt.getReceiptNumber() + " | Comprobante: " + voucher.getVoucherNumber() + " | PDF bytes: " + pdf.length);
     }
 }

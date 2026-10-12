@@ -84,4 +84,65 @@ public class EmailServiceImpl implements EmailService {
             log.error("Excepción al comunicarse con la API de Resend: {}", e.getMessage(), e);
         }
     }
+
+    @Override
+    public void sendAssociateReceiptEmailWithPdf(String toEmail, String receiptNumber, String associateName, java.math.BigDecimal totalAmount, byte[] pdfBytes) {
+        if (toEmail == null || toEmail.isBlank()) {
+            throw new com.app.accounting.common.exception.BusinessRuleException("El asociado no tiene un correo electrónico configurado.");
+        }
+        if (resendApiKey == null || resendApiKey.isBlank()) {
+            throw new com.app.accounting.common.exception.BusinessRuleException("El servicio de correo automático (RESEND_API_KEY) no está configurado aún en el servidor. Puede descargar el PDF y enviarlo.");
+        }
+
+        try {
+            String base64Pdf = java.util.Base64.getEncoder().encodeToString(pdfBytes);
+            String formattedTotal = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("es", "CO")).format(totalAmount);
+            String htmlContent = "<div style='font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;'>"
+                    + "<div style='text-align: center; margin-bottom: 20px;'>"
+                    + "<h2 style='color: #1e3a8a; margin: 0;'>Comprobante Oficial de Recaudo</h2>"
+                    + "<p style='color: #64748b; font-size: 13px; margin-top: 4px;'>Konta ERP</p>"
+                    + "</div>"
+                    + "<p style='color: #334155; font-size: 14px;'>Estimado(a) <strong>" + associateName + "</strong>,</p>"
+                    + "<p style='color: #334155; font-size: 14px;'>Le confirmamos la recepción y contabilización de su pago:</p>"
+                    + "<div style='background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin: 20px 0;'>"
+                    + "<p style='margin: 4px 0; font-size: 14px; color: #1e293b;'><strong>Recibo N°:</strong> " + receiptNumber + "</p>"
+                    + "<p style='margin: 4px 0; font-size: 14px; color: #1e293b;'><strong>Valor Total:</strong> " + formattedTotal + " COP</p>"
+                    + "</div>"
+                    + "<p style='color: #334155; font-size: 14px;'>Adjunto a este correo encontrará su <strong>comprobante oficial en formato PDF</strong>.</p>"
+                    + "<hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;'/>"
+                    + "<p style='color: #94a3b8; font-size: 11px; text-align: center;'>Mensaje generado automáticamente. Por favor no responder a este correo.</p>"
+                    + "</div>";
+
+            String escapedHtml = htmlContent.replace("\"", "\\\"");
+            String filename = "Recibo_" + receiptNumber + ".pdf";
+
+            String requestBody = "{"
+                    + "\"from\":\"" + resendFromEmail + "\","
+                    + "\"to\":[\"" + toEmail + "\"],"
+                    + "\"subject\":\"Comprobante de Recaudo " + receiptNumber + " - " + associateName + "\","
+                    + "\"html\":\"" + escapedHtml + "\","
+                    + "\"attachments\":[{\"filename\":\"" + filename + "\",\"content\":\"" + base64Pdf + "\"}]"
+                    + "}";
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.resend.com/emails"))
+                    .header("Authorization", "Bearer " + resendApiKey.trim())
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info("Recibo {} enviado exitosamente con PDF adjunto a {}. Respuesta: {}", receiptNumber, toEmail, response.body());
+            } else {
+                log.error("Error al enviar recibo vía Resend: Código {} - {}", response.statusCode(), response.body());
+                throw new com.app.accounting.common.exception.BusinessRuleException("Error del proveedor de correo (" + response.statusCode() + "): " + response.body());
+            }
+        } catch (com.app.accounting.common.exception.BusinessRuleException bre) {
+            throw bre;
+        } catch (Exception e) {
+            log.error("Excepción al enviar correo con PDF de recibo: {}", e.getMessage(), e);
+            throw new com.app.accounting.common.exception.BusinessRuleException("No se pudo enviar el correo: " + e.getMessage());
+        }
+    }
 }
